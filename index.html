@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Tuner</title>
+    <link rel="stylesheet" href="tuner.css">
+    <script src="../base1/cockpit.js"></script>
+</head>
+<body>
+    <div id="app">
+        <header class="tuner-header">
+            <div>
+                <h1>System Tuner</h1>
+                <p class="subtitle">Browse tuning schemas &amp; profiles — compare against live, persistent, and historical settings · <a href="https://claude.ai/code/artifact/79866b32-32af-4754-b930-15f720ec0e73" target="_blank" rel="noopener">tuning report</a></p>
+            </div>
+            <div class="header-actions">
+                <span id="mode-badge" class="badge badge-mock" hidden>MOCK MODE — not connected to cockpit-bridge</span>
+                <button id="btn-refresh" class="btn">Refresh live</button>
+                <button id="btn-snapshot" class="btn btn-primary">Take snapshot</button>
+            </div>
+        </header>
+
+        <nav class="group-tabs" id="group-tabs">
+            <button class="tab active" data-group="all">All</button>
+            <button class="tab" data-group="safe">Safe &amp; well-supported</button>
+            <button class="tab" data-group="aggressive">More aggressive</button>
+            <button class="tab" data-group="tkg">linux-tkg kernel</button>
+            <button class="tab" data-group="info">System info</button>
+        </nav>
+
+        <div class="controls">
+            <label>Profile:
+                <select id="profile-select"></select>
+            </label>
+            <label>Snapshot:
+                <select id="snapshot-select">
+                    <option value="">— none —</option>
+                </select>
+            </label>
+            <label>Category:
+                <select id="category-select">
+                    <option value="">all</option>
+                </select>
+            </label>
+            <input type="search" id="search-box" placeholder="Filter settings…">
+            <span id="status-line" class="status-line"></span>
+        </div>
+
+        <div class="legend">
+            <span class="chip chip-drift">drift: live ≠ persistent</span>
+            <span class="chip chip-mismatch">off-profile: live ≠ profile</span>
+            <span class="chip chip-changed">changed since snapshot</span>
+            <span class="chip chip-ok">matches profile</span>
+        </div>
+
+        <div class="table-wrap">
+            <table id="settings-table">
+                <thead>
+                    <tr>
+                        <th>Setting</th>
+                        <th>Group / Risk</th>
+                        <th class="col-profile">Profile</th>
+                        <th>Live</th>
+                        <th>Persistent</th>
+                        <th class="col-snapshot">Snapshot</th>
+                    </tr>
+                </thead>
+                <tbody id="settings-body"></tbody>
+            </table>
+        </div>
+
+        <div id="detail-panel" class="detail-panel" hidden>
+            <button class="detail-close" id="detail-close">✕</button>
+            <div id="detail-content"></div>
+        </div>
+    </div>
+
+    <script src="adapter.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+[Unit]
+Description=cockpit-tuner settings snapshot (kept only if changed)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 @SNAPSHOT@
+Nice=10

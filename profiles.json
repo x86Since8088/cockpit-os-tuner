@@ -1,0 +1,57 @@
+{
+    "version": 2,
+    "note": "Profiles map setting id -> recommended value. Updated 2026-08-27 from the deep-research report (verified claims where noted; sysctl/limits values rest on unverified consensus and are flagged in the report).",
+    "profiles": [
+        {
+            "id": "ubuntu-defaults",
+            "title": "Ubuntu 26.04 defaults",
+            "description": "Stock values as shipped, for drift detection. ManagedOOMSwap=auto is the post-LP#1972159 default (verified).",
+            "values": {
+                "vm.swappiness": "60",
+                "fs.inotify.max_user_watches": "65536",
+                "fs.inotify.max_user_instances": "128",
+                "vm.max_map_count": "1048576",
+                "vm.overcommit_memory": "0",
+                "thp.enabled": "madvise",
+                "systemd-oomd.state": "active",
+                "oomd.ManagedOOMSwap-root": "auto",
+                "mglru.min_ttl_ms": "0",
+                "apport.service": "active",
+                "thp.defrag": "madvise",
+                "vm.watermark_scale_factor": "10",
+                "kernel.tainted": "0"
+            }
+        },
+        {
+            "id": "stability-safe",
+            "title": "Stability — safe & well-supported",
+            "description": "Verified tier: switch GPU driver off nouveau via ubuntu-drivers (highest-leverage change), keep swap present for systemd-oomd, expect ManagedOOMSwap=auto, keep min_ttl_ms at 0. inotify/swappiness values are unverified consensus — see report.",
+            "values": {
+                "gpu.driver": "nvidia (ubuntu-drivers recommends nvidia-driver-595-open)",
+                "systemd-oomd.state": "active",
+                "apport.service": "active",
+                "oomd.ManagedOOMSwap-root": "auto",
+                "mglru.min_ttl_ms": "0",
+                "vm.swappiness": "10",
+                "fs.inotify.max_user_watches": "524288",
+                "fs.inotify.max_user_instances": "1024",
+                "vm.max_map_count": "1048576"
+            }
+        },
+        {
+            "id": "stability-aggressive",
+            "title": "Stability — more aggressive",
+            "description": "Experimental tier: A/B-test MGLRU (runtime-toggleable; real-world results contested — LP #2087886 kswapd spins), raise oomd pressure threshold, THP madvise. Apply one at a time and watch the journal.",
+            "values": {
+                "vm.swappiness": "10",
+                "fs.inotify.max_user_watches": "1048576",
+                "fs.inotify.max_user_instances": "1024",
+                "mglru.enabled": "0x0007",
+                "mglru.min_ttl_ms": "0",
+                "thp.enabled": "madvise",
+                "oomd.DefaultMemoryPressureLimit": "80%",
+                "vm.min_free_kbytes": "262144"
+            }
+        }
+    ]
+}
