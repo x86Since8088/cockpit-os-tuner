@@ -123,3 +123,38 @@ tbody tr:hover { background: color-mix(in srgb, var(--accent) 7%, transparent); 
     background: var(--bg); padding: 0.5rem; border-radius: 3px;
     font-size: 0.8rem; overflow-x: auto;
 }
+
+/* ---------------- admin edit + undo ---------------- */
+
+.edit-box {
+    margin-top: 1.25rem; padding: 0.9rem 1rem;
+    border: 1px solid var(--border); border-left: 3px solid var(--accent);
+    border-radius: 3px; background: var(--bg);
+}
+.edit-box h3 { margin: 0 0 0.6rem; font-size: 0.95rem; }
+.edit-locked { color: var(--muted); font-size: 0.9rem; }
+.edit-row { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; }
+.edit-input {
+    font: inherit; font-size: 0.9rem; padding: 0.3rem 0.5rem;
+    border: 1px solid var(--border); border-radius: 3px;
+    background: var(--panel); color: var(--text); min-width: 9rem;
+}
+.edit-persist { font-size: 0.82rem; color: var(--text); display: inline-flex; align-items: center; gap: 0.3rem; }
+.edit-preview {
+    margin-top: 0.6rem; background: var(--panel); border: 1px solid var(--border);
+    font-family: "RedHatMono", ui-monospace, monospace; font-size: 0.78rem;
+}
+.edit-msg { margin-top: 0.4rem; font-size: 0.85rem; min-height: 1.1rem; }
+.edit-ok { color: var(--ok-fg); }
+.edit-err { color: var(--bad-fg); }
+.edit-note { font-size: 0.8rem; color: var(--muted); margin: 0.6rem 0 0; }
+
+.undo-list { list-style: none; padding: 0; margin: 0.75rem 0 0; }
+.undo-entry {
+    border: 1px solid var(--border); border-radius: 3px;
+    padding: 0.6rem 0.75rem; margin-bottom: 0.6rem; background: var(--bg);
+}
+.undo-entry.undone { opacity: 0.55; }
+.undo-meta { color: var(--muted); font-size: 0.78rem; margin-top: 0.15rem; }
+.undo-entry .sm-undo { margin-top: 0.45rem; font-size: 0.8rem; padding: 0.15rem 0.6rem; }
+.badge-info { background: var(--chg-bg); color: var(--chg-fg); border-color: transparent; }

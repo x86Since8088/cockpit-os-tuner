@@ -45,7 +45,8 @@ else
     BASE="${DESTDIR:-}/usr/share/cockpit"
 fi
 TARGET="$BASE/$NAME"
-UNIT_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
+# $HOME can be unset when a system install runs from a batch/job context.
+UNIT_DIR="${XDG_CONFIG_HOME:-${HOME:-/root}/.config}/systemd/user"
 
 if [[ "$ACTION" == "uninstall" ]]; then
     if [[ "$MODE" == "user" ]]; then

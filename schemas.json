@@ -1,6 +1,6 @@
 {
     "version": 1,
-    "note": "Data-driven settings schema. Each entry declares how to read the LIVE value and where the PERSISTENT value lives. Groups: safe | aggressive | tkg | info.",
+    "note": "Data-driven settings schema. Each entry declares how to read the LIVE value, where the PERSISTENT value lives, its DEFAULT and RECOMMENDED value (or range/choices), and - when safely editable - an edit descriptor (class sysctl|sysfs) for the admin-gated apply engine. Groups: safe | aggressive | tkg | info.",
     "settings": [
         {
             "id": "vm.swappiness",
@@ -9,10 +9,25 @@
             "group": "safe",
             "category": "memory",
             "risk": "low",
-            "live": { "type": "procfile", "path": "/proc/sys/vm/swappiness" },
-            "persistent": { "type": "sysctl", "key": "vm.swappiness" },
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/vm/swappiness"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "vm.swappiness"
+            },
             "verify": "sysctl vm.swappiness",
-            "rollback": "Remove the entry from /etc/sysctl.d/ and run: sudo sysctl -w vm.swappiness=60"
+            "rollback": "Remove the entry from /etc/sysctl.d/ and run: sudo sysctl -w vm.swappiness=60",
+            "default": "60",
+            "recommended": "10",
+            "range": {
+                "min": 0,
+                "max": 200
+            },
+            "edit": {
+                "class": "sysctl"
+            }
         },
         {
             "id": "fs.inotify.max_user_watches",
@@ -21,10 +36,25 @@
             "group": "safe",
             "category": "limits",
             "risk": "low",
-            "live": { "type": "procfile", "path": "/proc/sys/fs/inotify/max_user_watches" },
-            "persistent": { "type": "sysctl", "key": "fs.inotify.max_user_watches" },
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/fs/inotify/max_user_watches"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "fs.inotify.max_user_watches"
+            },
             "verify": "sysctl fs.inotify.max_user_watches",
-            "rollback": "Remove the entry from /etc/sysctl.d/; default restores on reboot."
+            "rollback": "Remove the entry from /etc/sysctl.d/; default restores on reboot.",
+            "default": "65536",
+            "recommended": "524288",
+            "range": {
+                "min": 8192,
+                "max": 4194304
+            },
+            "edit": {
+                "class": "sysctl"
+            }
         },
         {
             "id": "fs.inotify.max_user_instances",
@@ -33,10 +63,25 @@
             "group": "safe",
             "category": "limits",
             "risk": "low",
-            "live": { "type": "procfile", "path": "/proc/sys/fs/inotify/max_user_instances" },
-            "persistent": { "type": "sysctl", "key": "fs.inotify.max_user_instances" },
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/fs/inotify/max_user_instances"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "fs.inotify.max_user_instances"
+            },
             "verify": "sysctl fs.inotify.max_user_instances",
-            "rollback": "Remove the entry from /etc/sysctl.d/; default restores on reboot."
+            "rollback": "Remove the entry from /etc/sysctl.d/; default restores on reboot.",
+            "default": "128",
+            "recommended": "1024",
+            "range": {
+                "min": 64,
+                "max": 8192
+            },
+            "edit": {
+                "class": "sysctl"
+            }
         },
         {
             "id": "vm.max_map_count",
@@ -45,34 +90,73 @@
             "group": "safe",
             "category": "memory",
             "risk": "low",
-            "live": { "type": "procfile", "path": "/proc/sys/vm/max_map_count" },
-            "persistent": { "type": "sysctl", "key": "vm.max_map_count" },
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/vm/max_map_count"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "vm.max_map_count"
+            },
             "verify": "sysctl vm.max_map_count",
-            "rollback": "Remove the entry from /etc/sysctl.d/; default restores on reboot."
+            "rollback": "Remove the entry from /etc/sysctl.d/; default restores on reboot.",
+            "default": "1048576",
+            "recommended": "1048576",
+            "range": {
+                "min": 65530,
+                "max": 16777216
+            },
+            "edit": {
+                "class": "sysctl"
+            }
         },
         {
             "id": "kernel.core_pattern",
             "title": "kernel.core_pattern",
-            "description": "Where core dumps go. Ubuntu pipes them to apport, which feeds /var/crash — keep this intact while diagnosing the Firefox/Electron crashes.",
+            "description": "Where core dumps go. Ubuntu pipes them to apport, which feeds /var/crash \u2014 keep this intact while diagnosing the Firefox/Electron crashes.",
             "group": "safe",
             "category": "diagnostics",
             "risk": "low",
-            "live": { "type": "procfile", "path": "/proc/sys/kernel/core_pattern" },
-            "persistent": { "type": "sysctl", "key": "kernel.core_pattern" },
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/kernel/core_pattern"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "kernel.core_pattern"
+            },
             "verify": "cat /proc/sys/kernel/core_pattern",
-            "rollback": "Managed by apport.service; restart it to restore."
+            "rollback": "Managed by apport.service; restart it to restore.",
+            "default": "|/usr/share/apport/apport %p %s %c %d %P %E",
+            "recommended": "keep apport pipeline while diagnosing"
         },
         {
             "id": "systemd-oomd.state",
             "title": "systemd-oomd service",
-            "description": "Userspace OOM killer. Known to kill entire app slices (browser included) under memory pressure — a classic cause of 'silent' browser disappearance.",
+            "description": "Userspace OOM killer. Known to kill entire app slices (browser included) under memory pressure \u2014 a classic cause of 'silent' browser disappearance.",
             "group": "safe",
             "category": "oom",
             "risk": "low",
-            "live": { "type": "command", "argv": ["systemctl", "is-active", "systemd-oomd"] },
-            "persistent": { "type": "command", "argv": ["systemctl", "is-enabled", "systemd-oomd"] },
+            "live": {
+                "type": "command",
+                "argv": [
+                    "systemctl",
+                    "is-active",
+                    "systemd-oomd"
+                ]
+            },
+            "persistent": {
+                "type": "command",
+                "argv": [
+                    "systemctl",
+                    "is-enabled",
+                    "systemd-oomd"
+                ]
+            },
             "verify": "oomctl (as root) shows monitored cgroups",
-            "rollback": "sudo systemctl enable --now systemd-oomd"
+            "rollback": "sudo systemctl enable --now systemd-oomd",
+            "default": "active",
+            "recommended": "active"
         },
         {
             "id": "oomd.ManagedOOMSwap-root",
@@ -81,22 +165,56 @@
             "group": "safe",
             "category": "oom",
             "risk": "low",
-            "live": { "type": "command", "argv": ["systemctl", "show", "-p", "ManagedOOMSwap", "--value", "--", "-.slice"] },
-            "persistent": { "type": "command", "argv": ["sh", "-c", "grep -hsE '^ManagedOOMSwap=' /usr/lib/systemd/system/-.slice.d/*.conf /etc/systemd/system/-.slice.d/*.conf 2>/dev/null | tail -1 | cut -d= -f2"] },
+            "live": {
+                "type": "command",
+                "argv": [
+                    "systemctl",
+                    "show",
+                    "-p",
+                    "ManagedOOMSwap",
+                    "--value",
+                    "--",
+                    "-.slice"
+                ]
+            },
+            "persistent": {
+                "type": "command",
+                "argv": [
+                    "sh",
+                    "-c",
+                    "grep -hsE '^ManagedOOMSwap=' /usr/lib/systemd/system/-.slice.d/*.conf /etc/systemd/system/-.slice.d/*.conf 2>/dev/null | tail -1 | cut -d= -f2"
+                ]
+            },
             "verify": "systemctl show -- -.slice | grep ^ManagedOOMSwap  (expect auto)",
-            "rollback": "Remove any local -.slice.d override; Ubuntu default is auto."
+            "rollback": "Remove any local -.slice.d override; Ubuntu default is auto.",
+            "default": "auto",
+            "recommended": "auto"
         },
         {
             "id": "mglru.min_ttl_ms",
             "title": "MGLRU min_ttl_ms",
-            "description": "MGLRU anti-thrashing valve. Nonzero values protect the recent working set but invoke the kernel OOM killer to terminate apps when it can't stay resident — a candidate explanation for unexplained app deaths. Default 0 (disabled); such kills are logged in dmesg/journal.",
+            "description": "MGLRU anti-thrashing valve. Nonzero values protect the recent working set but invoke the kernel OOM killer to terminate apps when it can't stay resident \u2014 a candidate explanation for unexplained app deaths. Default 0 (disabled); such kills are logged in dmesg/journal.",
             "group": "aggressive",
             "category": "memory",
             "risk": "high",
-            "live": { "type": "procfile", "path": "/sys/kernel/mm/lru_gen/min_ttl_ms" },
-            "persistent": { "type": "none" },
+            "live": {
+                "type": "procfile",
+                "path": "/sys/kernel/mm/lru_gen/min_ttl_ms"
+            },
+            "persistent": {
+                "type": "none"
+            },
             "verify": "cat /sys/kernel/mm/lru_gen/min_ttl_ms",
-            "rollback": "echo 0 | sudo tee /sys/kernel/mm/lru_gen/min_ttl_ms"
+            "rollback": "echo 0 | sudo tee /sys/kernel/mm/lru_gen/min_ttl_ms",
+            "default": "0",
+            "recommended": "0",
+            "range": {
+                "min": 0,
+                "max": 60000
+            },
+            "edit": {
+                "class": "sysfs"
+            }
         },
         {
             "id": "oomd.DefaultMemoryPressureLimit",
@@ -105,10 +223,18 @@
             "group": "aggressive",
             "category": "oom",
             "risk": "medium",
-            "live": { "type": "none" },
-            "persistent": { "type": "file-regex", "path": "/etc/systemd/oomd.conf", "regex": "^\\s*DefaultMemoryPressureLimit\\s*=\\s*(.+)$" },
+            "live": {
+                "type": "none"
+            },
+            "persistent": {
+                "type": "file-regex",
+                "path": "/etc/systemd/oomd.conf",
+                "regex": "^\\s*DefaultMemoryPressureLimit\\s*=\\s*(.+)$"
+            },
             "verify": "systemd-analyze cat-config systemd/oomd.conf",
-            "rollback": "Comment the line out in /etc/systemd/oomd.conf and restart systemd-oomd."
+            "rollback": "Comment the line out in /etc/systemd/oomd.conf and restart systemd-oomd.",
+            "default": "60% (commented)",
+            "recommended": "60%; raise to 80% only after observed oomd kills"
         },
         {
             "id": "vm.overcommit_memory",
@@ -117,10 +243,26 @@
             "group": "aggressive",
             "category": "memory",
             "risk": "medium",
-            "live": { "type": "procfile", "path": "/proc/sys/vm/overcommit_memory" },
-            "persistent": { "type": "sysctl", "key": "vm.overcommit_memory" },
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/vm/overcommit_memory"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "vm.overcommit_memory"
+            },
             "verify": "sysctl vm.overcommit_memory",
-            "rollback": "sudo sysctl -w vm.overcommit_memory=0"
+            "rollback": "sudo sysctl -w vm.overcommit_memory=0",
+            "default": "0",
+            "recommended": "0",
+            "choices": [
+                "0",
+                "1",
+                "2"
+            ],
+            "edit": {
+                "class": "sysctl"
+            }
         },
         {
             "id": "vm.min_free_kbytes",
@@ -129,10 +271,25 @@
             "group": "aggressive",
             "category": "memory",
             "risk": "medium",
-            "live": { "type": "procfile", "path": "/proc/sys/vm/min_free_kbytes" },
-            "persistent": { "type": "sysctl", "key": "vm.min_free_kbytes" },
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/vm/min_free_kbytes"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "vm.min_free_kbytes"
+            },
             "verify": "sysctl vm.min_free_kbytes",
-            "rollback": "Remove the sysctl.d entry; reboot restores the auto-computed default."
+            "rollback": "Remove the sysctl.d entry; reboot restores the auto-computed default.",
+            "default": "auto-computed (67584 on 128GB)",
+            "recommended": "67584-262144",
+            "range": {
+                "min": 16384,
+                "max": 1048576
+            },
+            "edit": {
+                "class": "sysctl"
+            }
         },
         {
             "id": "thp.enabled",
@@ -141,10 +298,27 @@
             "group": "aggressive",
             "category": "memory",
             "risk": "medium",
-            "live": { "type": "procfile-bracket", "path": "/sys/kernel/mm/transparent_hugepage/enabled" },
-            "persistent": { "type": "file-regex", "path": "/etc/default/grub", "regex": "transparent_hugepage=(\\S+)" },
+            "live": {
+                "type": "procfile-bracket",
+                "path": "/sys/kernel/mm/transparent_hugepage/enabled"
+            },
+            "persistent": {
+                "type": "file-regex",
+                "path": "/etc/default/grub",
+                "regex": "transparent_hugepage=(\\S+)"
+            },
             "verify": "cat /sys/kernel/mm/transparent_hugepage/enabled",
-            "rollback": "Remove transparent_hugepage= from GRUB_CMDLINE_LINUX_DEFAULT, update-grub, reboot."
+            "rollback": "Remove transparent_hugepage= from GRUB_CMDLINE_LINUX_DEFAULT, update-grub, reboot.",
+            "default": "madvise",
+            "recommended": "madvise",
+            "choices": [
+                "always",
+                "madvise",
+                "never"
+            ],
+            "edit": {
+                "class": "sysfs"
+            }
         },
         {
             "id": "mglru.enabled",
@@ -153,10 +327,24 @@
             "group": "aggressive",
             "category": "memory",
             "risk": "medium",
-            "live": { "type": "procfile", "path": "/sys/kernel/mm/lru_gen/enabled" },
-            "persistent": { "type": "none" },
+            "live": {
+                "type": "procfile",
+                "path": "/sys/kernel/mm/lru_gen/enabled"
+            },
+            "persistent": {
+                "type": "none"
+            },
             "verify": "cat /sys/kernel/mm/lru_gen/enabled",
-            "rollback": "echo the previous bitmask back, or reboot."
+            "rollback": "echo the previous bitmask back, or reboot.",
+            "default": "0x0007",
+            "recommended": "0x0007; A/B test off (n) for reclaim stalls",
+            "choices": [
+                "y",
+                "n"
+            ],
+            "edit": {
+                "class": "sysfs"
+            }
         },
         {
             "id": "limits.nofile",
@@ -165,10 +353,23 @@
             "group": "safe",
             "category": "limits",
             "risk": "low",
-            "live": { "type": "command", "argv": ["sh", "-c", "ulimit -n"] },
-            "persistent": { "type": "file-regex", "path": "/etc/systemd/system.conf", "regex": "^\\s*DefaultLimitNOFILE\\s*=\\s*(.+)$" },
+            "live": {
+                "type": "command",
+                "argv": [
+                    "sh",
+                    "-c",
+                    "ulimit -n"
+                ]
+            },
+            "persistent": {
+                "type": "file-regex",
+                "path": "/etc/systemd/system.conf",
+                "regex": "^\\s*DefaultLimitNOFILE\\s*=\\s*(.+)$"
+            },
             "verify": "ulimit -n in a fresh shell",
-            "rollback": "Comment the line out in /etc/systemd/system.conf; reboot."
+            "rollback": "Comment the line out in /etc/systemd/system.conf; reboot.",
+            "default": "1024 (session soft)",
+            "recommended": "1024 unless an app exhausts fds"
         },
         {
             "id": "gpu.driver",
@@ -177,10 +378,26 @@
             "group": "info",
             "category": "gpu",
             "risk": "none",
-            "live": { "type": "command", "argv": ["sh", "-c", "lspci -k | grep -A3 -i 'vga\\|3d' | grep -m1 'Kernel driver in use' | sed 's/.*: //'"] },
-            "persistent": { "type": "command", "argv": ["sh", "-c", "ls /etc/modprobe.d/ 2>/dev/null | grep -m1 -i 'nvidia\\|nouveau' || echo 'no modprobe override'"] },
+            "live": {
+                "type": "command",
+                "argv": [
+                    "sh",
+                    "-c",
+                    "lspci -k | grep -A3 -i 'vga\\|3d' | grep -m1 'Kernel driver in use' | sed 's/.*: //'"
+                ]
+            },
+            "persistent": {
+                "type": "command",
+                "argv": [
+                    "sh",
+                    "-c",
+                    "ls /etc/modprobe.d/ 2>/dev/null | grep -m1 -i 'nvidia\\|nouveau' || echo 'no modprobe override'"
+                ]
+            },
             "verify": "lspci -k | grep -A3 VGA",
-            "rollback": "ubuntu-drivers / apt manage driver packages."
+            "rollback": "ubuntu-drivers / apt manage driver packages.",
+            "default": "nouveau (in-tree)",
+            "recommended": "nvidia (ubuntu-drivers: nvidia-driver-595-open)"
         },
         {
             "id": "kernel.cmdline",
@@ -189,10 +406,19 @@
             "group": "info",
             "category": "kernel",
             "risk": "none",
-            "live": { "type": "procfile", "path": "/proc/cmdline" },
-            "persistent": { "type": "file-regex", "path": "/etc/default/grub", "regex": "^GRUB_CMDLINE_LINUX_DEFAULT=\"(.*)\"" },
+            "live": {
+                "type": "procfile",
+                "path": "/proc/cmdline"
+            },
+            "persistent": {
+                "type": "file-regex",
+                "path": "/etc/default/grub",
+                "regex": "^GRUB_CMDLINE_LINUX_DEFAULT=\"(.*)\""
+            },
             "verify": "cat /proc/cmdline",
-            "rollback": "Edit /etc/default/grub, sudo update-grub, reboot."
+            "rollback": "Edit /etc/default/grub, sudo update-grub, reboot.",
+            "default": "quiet splash",
+            "recommended": "quiet splash (no tuning params needed)"
         },
         {
             "id": "swap.devices",
@@ -201,10 +427,26 @@
             "group": "info",
             "category": "memory",
             "risk": "none",
-            "live": { "type": "command", "argv": ["sh", "-c", "swapon --show --noheadings | tr -s ' ' | head -3"] },
-            "persistent": { "type": "command", "argv": ["sh", "-c", "grep -hsE '\\bswap\\b' /etc/fstab | grep -v '^#' | head -3; echo" ] },
+            "live": {
+                "type": "command",
+                "argv": [
+                    "sh",
+                    "-c",
+                    "swapon --show --noheadings | tr -s ' ' | head -3"
+                ]
+            },
+            "persistent": {
+                "type": "command",
+                "argv": [
+                    "sh",
+                    "-c",
+                    "grep -hsE '\\bswap\\b' /etc/fstab | grep -v '^#' | head -3; echo"
+                ]
+            },
             "verify": "swapon --show",
-            "rollback": "n/a (informational)"
+            "rollback": "n/a (informational)",
+            "default": "/swap.img 8G",
+            "recommended": "keep swap present - systemd-oomd requires it"
         },
         {
             "id": "kernel.release",
@@ -213,10 +455,25 @@
             "group": "info",
             "category": "kernel",
             "risk": "none",
-            "live": { "type": "command", "argv": ["uname", "-r"] },
-            "persistent": { "type": "command", "argv": ["sh", "-c", "ls -1 /boot/vmlinuz-* 2>/dev/null | sed 's|/boot/vmlinuz-||' | sort | tail -3 | paste -sd ', '"] },
+            "live": {
+                "type": "command",
+                "argv": [
+                    "uname",
+                    "-r"
+                ]
+            },
+            "persistent": {
+                "type": "command",
+                "argv": [
+                    "sh",
+                    "-c",
+                    "ls -1 /boot/vmlinuz-* 2>/dev/null | sed 's|/boot/vmlinuz-||' | sort | tail -3 | paste -sd ', '"
+                ]
+            },
             "verify": "uname -r",
-            "rollback": "Select another kernel from the GRUB menu."
+            "rollback": "Select another kernel from the GRUB menu.",
+            "default": "Ubuntu HWE generic kernel",
+            "recommended": "stock generic kernel"
         },
         {
             "id": "tkg.installed",
@@ -225,10 +482,22 @@
             "group": "tkg",
             "category": "kernel",
             "risk": "none",
-            "live": { "type": "command", "argv": ["sh", "-c", "ls -1 /boot/vmlinuz-*tkg* 2>/dev/null | paste -sd ', ' || true"], "emptyAs": "not installed" },
-            "persistent": { "type": "none" },
+            "live": {
+                "type": "command",
+                "argv": [
+                    "sh",
+                    "-c",
+                    "ls -1 /boot/vmlinuz-*tkg* 2>/dev/null | paste -sd ', ' || true"
+                ],
+                "emptyAs": "not installed"
+            },
+            "persistent": {
+                "type": "none"
+            },
             "verify": "ls /boot/vmlinuz-*",
-            "rollback": "Boot the stock Ubuntu kernel from GRUB; remove tkg packages."
+            "rollback": "Boot the stock Ubuntu kernel from GRUB; remove tkg packages.",
+            "default": "not installed",
+            "recommended": "not installed (experimental track only)"
         },
         {
             "id": "tkg.sched_bore",
@@ -237,10 +506,18 @@
             "group": "tkg",
             "category": "kernel",
             "risk": "none",
-            "live": { "type": "procfile", "path": "/proc/sys/kernel/sched_bore", "emptyAs": "not present (EEVDF)" },
-            "persistent": { "type": "none" },
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/kernel/sched_bore",
+                "emptyAs": "not present (EEVDF)"
+            },
+            "persistent": {
+                "type": "none"
+            },
             "verify": "cat /proc/sys/kernel/sched_bore",
-            "rollback": "n/a (kernel build option)"
+            "rollback": "n/a (kernel build option)",
+            "default": "not present (EEVDF)",
+            "recommended": "EEVDF (stock; tkg's own guidance)"
         },
         {
             "id": "tkg.preempt",
@@ -249,10 +526,23 @@
             "group": "tkg",
             "category": "kernel",
             "risk": "none",
-            "live": { "type": "command", "argv": ["sh", "-c", "uname -v | grep -o 'PREEMPT[_A-Z]*' | head -1"] },
-            "persistent": { "type": "file-regex", "path": "/etc/default/grub", "regex": "preempt=(\\S+)" },
+            "live": {
+                "type": "command",
+                "argv": [
+                    "sh",
+                    "-c",
+                    "uname -v | grep -o 'PREEMPT[_A-Z]*' | head -1"
+                ]
+            },
+            "persistent": {
+                "type": "file-regex",
+                "path": "/etc/default/grub",
+                "regex": "preempt=(\\S+)"
+            },
             "verify": "uname -v",
-            "rollback": "Remove preempt= from the kernel command line."
+            "rollback": "Remove preempt= from the kernel command line.",
+            "default": "PREEMPT_DYNAMIC",
+            "recommended": "PREEMPT_DYNAMIC"
         },
         {
             "id": "electron.version",
@@ -261,34 +551,69 @@
             "group": "info",
             "category": "apps",
             "risk": "none",
-            "live": { "type": "procfile", "path": "/opt/electron/version", "emptyAs": "not installed" },
-            "persistent": { "type": "none" },
+            "live": {
+                "type": "procfile",
+                "path": "/opt/electron/version",
+                "emptyAs": "not installed"
+            },
+            "persistent": {
+                "type": "none"
+            },
             "verify": "/opt/electron/electron --version",
-            "rollback": "Reinstall a different version via the install-electron job."
+            "rollback": "Reinstall a different version via the install-electron job.",
+            "default": "none",
+            "recommended": "latest stable on the nvidia driver"
         },
         {
             "id": "gpu.kms-drivers",
             "title": "KMS drivers per card",
-            "description": "Kernel driver behind each DRM card. card0 (RTX 3060) drives the GNOME session; Chromium renders via ANGLE→zink→NVK on top of it.",
+            "description": "Kernel driver behind each DRM card. card0 (RTX 3060) drives the GNOME session; Chromium renders via ANGLE\u2192zink\u2192NVK on top of it.",
             "group": "info",
             "category": "gpu",
             "risk": "none",
-            "live": { "type": "command", "argv": ["sh", "-c", "for c in /sys/class/drm/card[0-9]; do echo \"$(basename $c): $(basename $(readlink $c/device/driver))\"; done | paste -sd ', '"] },
-            "persistent": { "type": "none" },
+            "live": {
+                "type": "command",
+                "argv": [
+                    "sh",
+                    "-c",
+                    "for c in /sys/class/drm/card[0-9]; do echo \"$(basename $c): $(basename $(readlink $c/device/driver))\"; done | paste -sd ', '"
+                ]
+            },
+            "persistent": {
+                "type": "none"
+            },
             "verify": "ls -l /sys/class/drm/card*/device/driver",
-            "rollback": "n/a (informational)"
+            "rollback": "n/a (informational)",
+            "default": "card0: nvidia-drm, card1: radeon",
+            "recommended": "nvidia-drm atomic on the display GPU"
         },
         {
             "id": "apport.service",
             "title": "apport crash capture",
-            "description": "Keeps /var/crash dumps flowing — the mechanism that let us extract the Electron FATAL. Leave active while diagnosing.",
+            "description": "Keeps /var/crash dumps flowing \u2014 the mechanism that let us extract the Electron FATAL. Leave active while diagnosing.",
             "group": "safe",
             "category": "diagnostics",
             "risk": "low",
-            "live": { "type": "command", "argv": ["systemctl", "is-active", "apport"] },
-            "persistent": { "type": "command", "argv": ["systemctl", "is-enabled", "apport"] },
+            "live": {
+                "type": "command",
+                "argv": [
+                    "systemctl",
+                    "is-active",
+                    "apport"
+                ]
+            },
+            "persistent": {
+                "type": "command",
+                "argv": [
+                    "systemctl",
+                    "is-enabled",
+                    "apport"
+                ]
+            },
             "verify": "systemctl status apport",
-            "rollback": "sudo systemctl enable --now apport"
+            "rollback": "sudo systemctl enable --now apport",
+            "default": "active",
+            "recommended": "active while diagnosing crashes"
         },
         {
             "id": "limits.nofile-hard",
@@ -297,22 +622,42 @@
             "group": "info",
             "category": "limits",
             "risk": "none",
-            "live": { "type": "command", "argv": ["sh", "-c", "ulimit -Hn"] },
-            "persistent": { "type": "file-regex", "path": "/etc/systemd/system.conf", "regex": "^\\s*DefaultLimitNOFILE\\s*=\\s*(.+)$" },
+            "live": {
+                "type": "command",
+                "argv": [
+                    "sh",
+                    "-c",
+                    "ulimit -Hn"
+                ]
+            },
+            "persistent": {
+                "type": "file-regex",
+                "path": "/etc/systemd/system.conf",
+                "regex": "^\\s*DefaultLimitNOFILE\\s*=\\s*(.+)$"
+            },
             "verify": "ulimit -Hn",
-            "rollback": "Comment the line out in /etc/systemd/system.conf; reboot."
+            "rollback": "Comment the line out in /etc/systemd/system.conf; reboot.",
+            "default": "1048576 (session hard)",
+            "recommended": "distro default"
         },
         {
             "id": "kernel.tainted",
             "title": "Kernel taint flags",
-            "description": "0 = untainted. Nonzero after loading out-of-tree modules (e.g. the NVIDIA driver sets taint bits) or kernel warnings/oopses — useful context when reading crash-era journals.",
+            "description": "0 = untainted. Nonzero after loading out-of-tree modules (e.g. the NVIDIA driver sets taint bits) or kernel warnings/oopses \u2014 useful context when reading crash-era journals.",
             "group": "info",
             "category": "diagnostics",
             "risk": "none",
-            "live": { "type": "procfile", "path": "/proc/sys/kernel/tainted" },
-            "persistent": { "type": "none" },
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/kernel/tainted"
+            },
+            "persistent": {
+                "type": "none"
+            },
             "verify": "cat /proc/sys/kernel/tainted",
-            "rollback": "n/a (informational)"
+            "rollback": "n/a (informational)",
+            "default": "0 (4096 with nvidia loaded)",
+            "recommended": "4096 = expected out-of-tree bit only"
         },
         {
             "id": "thp.defrag",
@@ -321,10 +666,27 @@
             "group": "aggressive",
             "category": "memory",
             "risk": "medium",
-            "live": { "type": "procfile-bracket", "path": "/sys/kernel/mm/transparent_hugepage/defrag" },
-            "persistent": { "type": "none" },
+            "live": {
+                "type": "procfile-bracket",
+                "path": "/sys/kernel/mm/transparent_hugepage/defrag"
+            },
+            "persistent": {
+                "type": "none"
+            },
             "verify": "cat /sys/kernel/mm/transparent_hugepage/defrag",
-            "rollback": "echo the previous mode back, or reboot."
+            "rollback": "echo the previous mode back, or reboot.",
+            "default": "madvise",
+            "recommended": "madvise",
+            "choices": [
+                "always",
+                "defer",
+                "defer+madvise",
+                "madvise",
+                "never"
+            ],
+            "edit": {
+                "class": "sysfs"
+            }
         },
         {
             "id": "vm.watermark_scale_factor",
@@ -333,10 +695,25 @@
             "group": "aggressive",
             "category": "memory",
             "risk": "medium",
-            "live": { "type": "procfile", "path": "/proc/sys/vm/watermark_scale_factor" },
-            "persistent": { "type": "sysctl", "key": "vm.watermark_scale_factor" },
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/vm/watermark_scale_factor"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "vm.watermark_scale_factor"
+            },
             "verify": "sysctl vm.watermark_scale_factor",
-            "rollback": "sudo sysctl -w vm.watermark_scale_factor=10"
+            "rollback": "sudo sysctl -w vm.watermark_scale_factor=10",
+            "default": "10",
+            "recommended": "10-125",
+            "range": {
+                "min": 10,
+                "max": 3000
+            },
+            "edit": {
+                "class": "sysctl"
+            }
         },
         {
             "id": "tkg.config_hz",
@@ -345,10 +722,21 @@
             "group": "tkg",
             "category": "kernel",
             "risk": "none",
-            "live": { "type": "command", "argv": ["sh", "-c", "grep -m1 '^CONFIG_HZ=' /boot/config-$(uname -r) 2>/dev/null | cut -d= -f2"] },
-            "persistent": { "type": "none" },
+            "live": {
+                "type": "command",
+                "argv": [
+                    "sh",
+                    "-c",
+                    "grep -m1 '^CONFIG_HZ=' /boot/config-$(uname -r) 2>/dev/null | cut -d= -f2"
+                ]
+            },
+            "persistent": {
+                "type": "none"
+            },
             "verify": "grep ^CONFIG_HZ= /boot/config-$(uname -r)",
-            "rollback": "n/a (kernel build option)"
+            "rollback": "n/a (kernel build option)",
+            "default": "1000",
+            "recommended": "1000"
         }
     ]
 }

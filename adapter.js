@@ -79,6 +79,39 @@
         });
     };
 
+    /* ---- admin-gated apply + undo journal (root-owned, survives reboot) ---- */
+
+    var UNDO_DIR = "/var/lib/cockpit-tuner";
+    var UNDO_FILE = UNDO_DIR + "/undo.jsonl";
+
+    /* Run one argv as root. Rejects on failure - callers show the message. */
+    CockpitBackend.prototype.rootRun = function (argv, input) {
+        var proc = cockpit.spawn(argv, { superuser: "require", err: "message" });
+        if (input !== undefined)
+            proc.input(input, false);
+        return proc;
+    };
+
+    CockpitBackend.prototype.readUndo = function () {
+        return this.rootRun(["sh", "-c", "cat " + UNDO_FILE + " 2>/dev/null || true"])
+            .then(function (out) {
+                return (out || "").trim().split("\n").filter(Boolean).map(function (l) {
+                    try { return JSON.parse(l); } catch (e) { return null; }
+                }).filter(Boolean);
+            });
+    };
+
+    CockpitBackend.prototype.appendUndo = function (entry) {
+        return this.rootRun(
+            ["sh", "-c", "mkdir -p " + UNDO_DIR + " && cat >> " + UNDO_FILE],
+            JSON.stringify(entry) + "\n");
+    };
+
+    /* Write a whole file as root (used for the sysctl persist drop-in). */
+    CockpitBackend.prototype.rootWriteFile = function (path, content) {
+        return this.rootRun(["sh", "-c", "cat > '" + path + "'"], content);
+    };
+
     /* ---------------- Mock backend ---------------- */
 
     function MockBackend() {
@@ -171,6 +204,39 @@
         try {
             localStorage.setItem("tuner-snapshot:" + name, JSON.stringify(data));
         } catch (e) { /* storage may be unavailable; snapshot silently lost in mock */ }
+        return Promise.resolve();
+    };
+
+    /* ---- mock admin apply/undo: mutate the canned files in memory ---- */
+
+    MockBackend.prototype._undo = [];
+
+    MockBackend.prototype.rootRun = function (argv, input) {
+        var line = argv.join(" ");
+        if (argv[0] === "sysctl" && argv[1] === "-w") {
+            var kv = argv[2].split("=");
+            this._files["/proc/sys/" + kv[0].replace(/\./g, "/")] = kv[1] + "\n";
+            return Promise.resolve("");
+        }
+        var m = /printf %s '([^']*)' > '([^']+)'/.exec(line);
+        if (m) {
+            this._files[m[2]] = m[1] + "\n";
+            return Promise.resolve("");
+        }
+        return Promise.resolve("");
+    };
+
+    MockBackend.prototype.readUndo = function () {
+        return Promise.resolve(this._undo.slice());
+    };
+
+    MockBackend.prototype.appendUndo = function (entry) {
+        this._undo.push(entry);
+        return Promise.resolve();
+    };
+
+    MockBackend.prototype.rootWriteFile = function (path, content) {
+        this._files[path] = content;
         return Promise.resolve();
     };
 

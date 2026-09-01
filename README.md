@@ -25,8 +25,10 @@ two JSON files — no code changes.
 
 * Cockpit loads each package in its own sandboxed iframe; a broken plugin cannot
   destabilize cockpit-ws or the bridge — worst case is a broken page.
-* v1 is **read-only**: it never runs with superuser and never writes system
-  state. The only writes are snapshot JSON files under
+* Without administrative access the page is **read-only** (locked edit box).
+  With it, settings whose schema has an `edit` descriptor can be applied;
+  every apply is journaled to root-owned `/var/lib/cockpit-tuner/undo.jsonl`
+  and is revertible from the Undo history panel. Snapshots still land in
   `~/.local/share/cockpit-tuner/history/`.
 * Opening `index.html` outside Cockpit (cockpit.js fails to load) automatically
   activates **mock mode** — a banner appears and canned data is served, so the
