@@ -737,6 +737,507 @@
             "rollback": "n/a (kernel build option)",
             "default": "1000",
             "recommended": "1000"
+        },
+        {
+            "id": "disk.nvme0n1.scheduler",
+            "title": "nvme0n1 I/O scheduler",
+            "description": "Block I/O scheduler for nvme0n1 (ssd). 'none' suits fast NVMe (the device reorders internally); mq-deadline adds fairness for SATA; bfq favors desktop interactivity on slower disks.",
+            "group": "aggressive",
+            "category": "device - disk - nvme0n1",
+            "risk": "medium",
+            "generated": true,
+            "default": "none",
+            "recommended": "none (NVMe) / mq-deadline (SATA)",
+            "choices": [
+                "none",
+                "mq-deadline"
+            ],
+            "live": {
+                "type": "procfile-bracket",
+                "path": "/sys/block/nvme0n1/queue/scheduler"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "edit": {
+                "class": "sysfs"
+            },
+            "verify": "cat /sys/block/nvme0n1/queue/scheduler",
+            "rollback": "Echo the previous scheduler back; runtime-only, reboot restores the kernel default."
+        },
+        {
+            "id": "disk.nvme0n1.read_ahead_kb",
+            "title": "nvme0n1 read-ahead (KB)",
+            "description": "Kernel readahead window for nvme0n1. Larger helps sequential reads; smaller reduces wasted I/O for random workloads.",
+            "group": "aggressive",
+            "category": "device - disk - nvme0n1",
+            "risk": "low",
+            "generated": true,
+            "default": "128",
+            "recommended": "128 (default) \u2013 512 for sequential-heavy use",
+            "range": {
+                "min": 0,
+                "max": 16384
+            },
+            "live": {
+                "type": "procfile",
+                "path": "/sys/block/nvme0n1/queue/read_ahead_kb"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "edit": {
+                "class": "sysfs"
+            },
+            "verify": "cat /sys/block/nvme0n1/queue/read_ahead_kb",
+            "rollback": "Echo the previous value back; runtime-only."
+        },
+        {
+            "id": "disk.nvme0n1.nr_requests",
+            "title": "nvme0n1 queue depth (nr_requests)",
+            "description": "Requests the block layer queues for nvme0n1 before throttling submitters.",
+            "group": "info",
+            "category": "device - disk - nvme0n1",
+            "risk": "low",
+            "generated": true,
+            "default": "1023",
+            "recommended": "device default",
+            "live": {
+                "type": "procfile",
+                "path": "/sys/block/nvme0n1/queue/nr_requests"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "verify": "cat /sys/block/nvme0n1/queue/nr_requests",
+            "rollback": "n/a (informational)"
+        },
+        {
+            "id": "disk.nvme1n1.scheduler",
+            "title": "nvme1n1 I/O scheduler",
+            "description": "Block I/O scheduler for nvme1n1 (ssd). 'none' suits fast NVMe (the device reorders internally); mq-deadline adds fairness for SATA; bfq favors desktop interactivity on slower disks.",
+            "group": "aggressive",
+            "category": "device - disk - nvme1n1",
+            "risk": "medium",
+            "generated": true,
+            "default": "none",
+            "recommended": "none (NVMe) / mq-deadline (SATA)",
+            "choices": [
+                "none",
+                "mq-deadline"
+            ],
+            "live": {
+                "type": "procfile-bracket",
+                "path": "/sys/block/nvme1n1/queue/scheduler"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "edit": {
+                "class": "sysfs"
+            },
+            "verify": "cat /sys/block/nvme1n1/queue/scheduler",
+            "rollback": "Echo the previous scheduler back; runtime-only, reboot restores the kernel default."
+        },
+        {
+            "id": "disk.nvme1n1.read_ahead_kb",
+            "title": "nvme1n1 read-ahead (KB)",
+            "description": "Kernel readahead window for nvme1n1. Larger helps sequential reads; smaller reduces wasted I/O for random workloads.",
+            "group": "aggressive",
+            "category": "device - disk - nvme1n1",
+            "risk": "low",
+            "generated": true,
+            "default": "128",
+            "recommended": "128 (default) \u2013 512 for sequential-heavy use",
+            "range": {
+                "min": 0,
+                "max": 16384
+            },
+            "live": {
+                "type": "procfile",
+                "path": "/sys/block/nvme1n1/queue/read_ahead_kb"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "edit": {
+                "class": "sysfs"
+            },
+            "verify": "cat /sys/block/nvme1n1/queue/read_ahead_kb",
+            "rollback": "Echo the previous value back; runtime-only."
+        },
+        {
+            "id": "disk.nvme1n1.nr_requests",
+            "title": "nvme1n1 queue depth (nr_requests)",
+            "description": "Requests the block layer queues for nvme1n1 before throttling submitters.",
+            "group": "info",
+            "category": "device - disk - nvme1n1",
+            "risk": "low",
+            "generated": true,
+            "default": "1023",
+            "recommended": "device default",
+            "live": {
+                "type": "procfile",
+                "path": "/sys/block/nvme1n1/queue/nr_requests"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "verify": "cat /sys/block/nvme1n1/queue/nr_requests",
+            "rollback": "n/a (informational)"
+        },
+        {
+            "id": "disk.sda.scheduler",
+            "title": "sda I/O scheduler",
+            "description": "Block I/O scheduler for sda (ssd). 'none' suits fast NVMe (the device reorders internally); mq-deadline adds fairness for SATA; bfq favors desktop interactivity on slower disks.",
+            "group": "aggressive",
+            "category": "device - disk - sda",
+            "risk": "medium",
+            "generated": true,
+            "default": "mq-deadline",
+            "recommended": "none (NVMe) / mq-deadline (SATA)",
+            "choices": [
+                "none",
+                "mq-deadline"
+            ],
+            "live": {
+                "type": "procfile-bracket",
+                "path": "/sys/block/sda/queue/scheduler"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "edit": {
+                "class": "sysfs"
+            },
+            "verify": "cat /sys/block/sda/queue/scheduler",
+            "rollback": "Echo the previous scheduler back; runtime-only, reboot restores the kernel default."
+        },
+        {
+            "id": "disk.sda.read_ahead_kb",
+            "title": "sda read-ahead (KB)",
+            "description": "Kernel readahead window for sda. Larger helps sequential reads; smaller reduces wasted I/O for random workloads.",
+            "group": "aggressive",
+            "category": "device - disk - sda",
+            "risk": "low",
+            "generated": true,
+            "default": "128",
+            "recommended": "128 (default) \u2013 512 for sequential-heavy use",
+            "range": {
+                "min": 0,
+                "max": 16384
+            },
+            "live": {
+                "type": "procfile",
+                "path": "/sys/block/sda/queue/read_ahead_kb"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "edit": {
+                "class": "sysfs"
+            },
+            "verify": "cat /sys/block/sda/queue/read_ahead_kb",
+            "rollback": "Echo the previous value back; runtime-only."
+        },
+        {
+            "id": "disk.sda.nr_requests",
+            "title": "sda queue depth (nr_requests)",
+            "description": "Requests the block layer queues for sda before throttling submitters.",
+            "group": "info",
+            "category": "device - disk - sda",
+            "risk": "low",
+            "generated": true,
+            "default": "64",
+            "recommended": "device default",
+            "live": {
+                "type": "procfile",
+                "path": "/sys/block/sda/queue/nr_requests"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "verify": "cat /sys/block/sda/queue/nr_requests",
+            "rollback": "n/a (informational)"
+        },
+        {
+            "id": "disk.sdb.scheduler",
+            "title": "sdb I/O scheduler",
+            "description": "Block I/O scheduler for sdb (ssd). 'none' suits fast NVMe (the device reorders internally); mq-deadline adds fairness for SATA; bfq favors desktop interactivity on slower disks.",
+            "group": "aggressive",
+            "category": "device - disk - sdb",
+            "risk": "medium",
+            "generated": true,
+            "default": "mq-deadline",
+            "recommended": "none (NVMe) / mq-deadline (SATA)",
+            "choices": [
+                "none",
+                "mq-deadline"
+            ],
+            "live": {
+                "type": "procfile-bracket",
+                "path": "/sys/block/sdb/queue/scheduler"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "edit": {
+                "class": "sysfs"
+            },
+            "verify": "cat /sys/block/sdb/queue/scheduler",
+            "rollback": "Echo the previous scheduler back; runtime-only, reboot restores the kernel default."
+        },
+        {
+            "id": "disk.sdb.read_ahead_kb",
+            "title": "sdb read-ahead (KB)",
+            "description": "Kernel readahead window for sdb. Larger helps sequential reads; smaller reduces wasted I/O for random workloads.",
+            "group": "aggressive",
+            "category": "device - disk - sdb",
+            "risk": "low",
+            "generated": true,
+            "default": "128",
+            "recommended": "128 (default) \u2013 512 for sequential-heavy use",
+            "range": {
+                "min": 0,
+                "max": 16384
+            },
+            "live": {
+                "type": "procfile",
+                "path": "/sys/block/sdb/queue/read_ahead_kb"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "edit": {
+                "class": "sysfs"
+            },
+            "verify": "cat /sys/block/sdb/queue/read_ahead_kb",
+            "rollback": "Echo the previous value back; runtime-only."
+        },
+        {
+            "id": "disk.sdb.nr_requests",
+            "title": "sdb queue depth (nr_requests)",
+            "description": "Requests the block layer queues for sdb before throttling submitters.",
+            "group": "info",
+            "category": "device - disk - sdb",
+            "risk": "low",
+            "generated": true,
+            "default": "64",
+            "recommended": "device default",
+            "live": {
+                "type": "procfile",
+                "path": "/sys/block/sdb/queue/nr_requests"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "verify": "cat /sys/block/sdb/queue/nr_requests",
+            "rollback": "n/a (informational)"
+        },
+        {
+            "id": "disk.sdc.scheduler",
+            "title": "sdc I/O scheduler",
+            "description": "Block I/O scheduler for sdc (ssd). 'none' suits fast NVMe (the device reorders internally); mq-deadline adds fairness for SATA; bfq favors desktop interactivity on slower disks.",
+            "group": "aggressive",
+            "category": "device - disk - sdc",
+            "risk": "medium",
+            "generated": true,
+            "default": "mq-deadline",
+            "recommended": "none (NVMe) / mq-deadline (SATA)",
+            "choices": [
+                "none",
+                "mq-deadline"
+            ],
+            "live": {
+                "type": "procfile-bracket",
+                "path": "/sys/block/sdc/queue/scheduler"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "edit": {
+                "class": "sysfs"
+            },
+            "verify": "cat /sys/block/sdc/queue/scheduler",
+            "rollback": "Echo the previous scheduler back; runtime-only, reboot restores the kernel default."
+        },
+        {
+            "id": "disk.sdc.read_ahead_kb",
+            "title": "sdc read-ahead (KB)",
+            "description": "Kernel readahead window for sdc. Larger helps sequential reads; smaller reduces wasted I/O for random workloads.",
+            "group": "aggressive",
+            "category": "device - disk - sdc",
+            "risk": "low",
+            "generated": true,
+            "default": "128",
+            "recommended": "128 (default) \u2013 512 for sequential-heavy use",
+            "range": {
+                "min": 0,
+                "max": 16384
+            },
+            "live": {
+                "type": "procfile",
+                "path": "/sys/block/sdc/queue/read_ahead_kb"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "edit": {
+                "class": "sysfs"
+            },
+            "verify": "cat /sys/block/sdc/queue/read_ahead_kb",
+            "rollback": "Echo the previous value back; runtime-only."
+        },
+        {
+            "id": "disk.sdc.nr_requests",
+            "title": "sdc queue depth (nr_requests)",
+            "description": "Requests the block layer queues for sdc before throttling submitters.",
+            "group": "info",
+            "category": "device - disk - sdc",
+            "risk": "low",
+            "generated": true,
+            "default": "64",
+            "recommended": "device default",
+            "live": {
+                "type": "procfile",
+                "path": "/sys/block/sdc/queue/nr_requests"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "verify": "cat /sys/block/sdc/queue/nr_requests",
+            "rollback": "n/a (informational)"
+        },
+        {
+            "id": "cpu.scaling_governor",
+            "title": "CPU scaling governor",
+            "description": "Frequency scaling policy (driver: amd-pstate-epp). With amd-pstate-epp, 'powersave' plus the energy-performance preference is the intended pairing; 'performance' pins the EPP to maximum.",
+            "group": "aggressive",
+            "category": "device - cpu - cpufreq",
+            "risk": "medium",
+            "generated": true,
+            "default": "powersave",
+            "recommended": "powersave (amd-pstate-epp) \u2014 see EPP below",
+            "choices": [
+                "performance",
+                "powersave"
+            ],
+            "live": {
+                "type": "procfile",
+                "path": "/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "edit": {
+                "class": "sysfs"
+            },
+            "verify": "cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor",
+            "rollback": "Echo the previous governor back; runtime-only (cpu0 shown; tools like cpupower set all cores)."
+        },
+        {
+            "id": "cpu.energy_performance_preference",
+            "title": "CPU energy/performance preference (EPP)",
+            "description": "amd-pstate-epp hint balancing power draw against responsiveness for the whole package (cpu0 shown).",
+            "group": "aggressive",
+            "category": "device - cpu - cpufreq",
+            "risk": "low",
+            "generated": true,
+            "default": "balance_performance",
+            "recommended": "balance_performance for a desktop workstation",
+            "choices": [
+                "default",
+                "performance",
+                "balance_performance",
+                "balance_power",
+                "power"
+            ],
+            "live": {
+                "type": "procfile",
+                "path": "/sys/devices/system/cpu/cpu0/cpufreq/energy_performance_preference"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "edit": {
+                "class": "sysfs"
+            },
+            "verify": "cat /sys/devices/system/cpu/cpu0/cpufreq/energy_performance_preference",
+            "rollback": "Echo the previous preference back; runtime-only."
+        },
+        {
+            "id": "cpu.boost",
+            "title": "CPU frequency boost",
+            "description": "Whether cores may exceed base clocks. Disabling trades peak performance for lower heat and steadier clocks.",
+            "group": "aggressive",
+            "category": "device - cpu - cpufreq",
+            "risk": "low",
+            "generated": true,
+            "default": "0",
+            "recommended": "1 (enabled)",
+            "choices": [
+                "0",
+                "1"
+            ],
+            "live": {
+                "type": "procfile",
+                "path": "/sys/devices/system/cpu/cpu0/cpufreq/boost"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "edit": {
+                "class": "sysfs"
+            },
+            "verify": "cat /sys/devices/system/cpu/cpu0/cpufreq/boost",
+            "rollback": "echo 1 back; runtime-only."
+        },
+        {
+            "id": "net.enp67s0.mtu",
+            "title": "enp67s0 MTU",
+            "description": "Maximum transmission unit for physical NIC enp67s0. 1500 is standard Ethernet; jumbo frames need every hop to agree.",
+            "group": "aggressive",
+            "category": "device - net - enp67s0",
+            "risk": "medium",
+            "generated": true,
+            "default": "1500",
+            "recommended": "1500 unless the whole path is jumbo-clean",
+            "range": {
+                "min": 576,
+                "max": 9216
+            },
+            "live": {
+                "type": "procfile",
+                "path": "/sys/class/net/enp67s0/mtu"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "edit": {
+                "class": "sysfs"
+            },
+            "verify": "cat /sys/class/net/enp67s0/mtu",
+            "rollback": "Echo 1500 back (or reapply the NetworkManager profile)."
+        },
+        {
+            "id": "net.enp67s0.speed",
+            "title": "enp67s0 link speed",
+            "description": "Negotiated link speed (Mb/s) for enp67s0.",
+            "group": "info",
+            "category": "device - net - enp67s0",
+            "risk": "none",
+            "generated": true,
+            "default": "\u2014",
+            "recommended": "highest the link negotiates",
+            "live": {
+                "type": "procfile",
+                "path": "/sys/class/net/enp67s0/speed"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "verify": "cat /sys/class/net/enp67s0/speed",
+            "rollback": "n/a (informational)"
         }
     ]
 }

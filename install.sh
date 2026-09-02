@@ -66,7 +66,7 @@ fi
 
 # --- pre-flight -----------------------------------------------------------
 
-for f in "${PAYLOAD[@]}" bin/tuner-snapshot.py; do
+for f in "${PAYLOAD[@]}" bin/tuner-snapshot.py bin/tuner-crawl.py; do
     [[ -f "$SRC/$f" ]] || { echo "missing source file: $SRC/$f" >&2; exit 1; }
 done
 
@@ -77,8 +77,10 @@ if command -v python3 >/dev/null 2>&1; then
         python3 -c 'import json,sys; json.load(open(sys.argv[1]))' "$SRC/$j" \
             || { echo "$j is not valid JSON" >&2; exit 1; }
     done
-    python3 -m py_compile "$SRC/bin/tuner-snapshot.py" \
-        || { echo "bin/tuner-snapshot.py does not compile" >&2; exit 1; }
+    for p in bin/tuner-snapshot.py bin/tuner-crawl.py; do
+        python3 -m py_compile "$SRC/$p" \
+            || { echo "$p does not compile" >&2; exit 1; }
+    done
 else
     echo "note: python3 not available, skipping JSON/py validation" >&2
 fi
@@ -102,6 +104,7 @@ for f in "${PAYLOAD[@]}"; do
     install -m 0644 "$SRC/$f" "$TARGET/$f"
 done
 install -m 0755 "$SRC/bin/tuner-snapshot.py" "$TARGET/bin/tuner-snapshot.py"
+install -m 0755 "$SRC/bin/tuner-crawl.py" "$TARGET/bin/tuner-crawl.py"
 
 # Remove files from older versions that are no longer part of the payload.
 while IFS= read -r -d '' stale; do

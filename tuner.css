@@ -126,6 +126,9 @@ th.col-pin, td.cell-pin { width: 2rem; padding-right: 0; }
     border: 1px solid var(--border); background: var(--bg); color: var(--muted);
 }
 .cat-chip.on { background: var(--accent); border-color: var(--accent); color: var(--panel); }
+.cat-chip.dev { border-style: dashed; }
+.cat-chip.dev.on { border-style: solid; }
+.cat-divider { color: var(--muted); font-size: 0.75rem; margin-left: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em; }
 .cat-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .group-toggle { color: var(--muted); font-size: 0.9rem; display: inline-flex; align-items: center; gap: 0.35rem; cursor: pointer; }
 .group-toggle input { accent-color: var(--accent); }
