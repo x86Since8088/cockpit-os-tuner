@@ -94,7 +94,41 @@ th {
     background: var(--panel);
     box-shadow: 0 1px 0 var(--border);
 }
-th.col-profile, td.col-profile { max-width: 420px; overflow-wrap: break-word; }
+th.col-profile, td.col-profile,
+th.col-live, td.col-live,
+th.col-persistent, td.col-persistent,
+th.col-snapshot, td.col-snapshot { max-width: 420px; overflow-wrap: break-word; }
+
+/* Left column: optional pinned pane on top, scrolling table below. */
+.table-col { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.table-col .table-wrap { flex: 1 1 auto; }
+
+.pinned-wrap {
+    overflow-x: auto; overflow-y: auto; max-height: 38vh;
+    background: var(--panel); border: 1px solid var(--accent); border-radius: 4px;
+}
+.pinned-wrap table { width: 100%; border-collapse: collapse; }
+
+th.col-pin, td.cell-pin { width: 2rem; padding-right: 0; }
+.pin-btn {
+    border: none; background: none; cursor: pointer;
+    color: var(--muted); font-size: 1rem; line-height: 1; padding: 0.1rem 0.25rem;
+}
+.pin-btn.pinned { color: var(--accent); }
+.pin-btn:hover { color: var(--accent); }
+.pin-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* Category multi-select chips + grouped toggle in the controls row. */
+.cat-filter { color: var(--muted); font-size: 0.9rem; display: inline-flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; }
+.cat-chip {
+    font: inherit; font-size: 0.78rem; cursor: pointer;
+    padding: 0.15rem 0.6rem; border-radius: 10px;
+    border: 1px solid var(--border); background: var(--bg); color: var(--muted);
+}
+.cat-chip.on { background: var(--accent); border-color: var(--accent); color: var(--panel); }
+.cat-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.group-toggle { color: var(--muted); font-size: 0.9rem; display: inline-flex; align-items: center; gap: 0.35rem; cursor: pointer; }
+.group-toggle input { accent-color: var(--accent); }
 tbody tr { cursor: pointer; }
 tbody tr:hover { background: color-mix(in srgb, var(--accent) 7%, transparent); }
 .cell-name .setting-title { display: block; font-weight: 600; }

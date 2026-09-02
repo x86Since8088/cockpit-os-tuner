@@ -39,10 +39,11 @@
                     <option value="">— none —</option>
                 </select>
             </label>
-            <label>Category:
-                <select id="category-select">
-                    <option value="">all</option>
-                </select>
+            <span class="cat-filter">Category:
+                <span id="category-chips"></span>
+            </span>
+            <label class="group-toggle" title="Pinned settings stay at the top while the rest scrolls">
+                <input type="checkbox" id="group-toggle"> Grouped
             </label>
             <input type="search" id="search-box" placeholder="Filter settings…">
             <span id="status-line" class="status-line"></span>
@@ -56,20 +57,39 @@
         </div>
 
         <div class="main-row">
+        <div class="table-col" id="table-col">
+        <div class="pinned-wrap" id="pinned-wrap" hidden>
+            <table class="pinned-table">
+                <thead>
+                    <tr>
+                        <th class="col-pin" title="Pinned"></th>
+                        <th>Setting</th>
+                        <th>Group / Risk</th>
+                        <th class="col-profile">Profile</th>
+                        <th class="col-live">Live</th>
+                        <th class="col-persistent">Persistent</th>
+                        <th class="col-snapshot">Snapshot</th>
+                    </tr>
+                </thead>
+                <tbody id="pinned-body"></tbody>
+            </table>
+        </div>
         <div class="table-wrap">
             <table id="settings-table">
                 <thead>
                     <tr>
+                        <th class="col-pin" title="Pin to top"></th>
                         <th>Setting</th>
                         <th>Group / Risk</th>
                         <th class="col-profile">Profile</th>
-                        <th>Live</th>
-                        <th>Persistent</th>
+                        <th class="col-live">Live</th>
+                        <th class="col-persistent">Persistent</th>
                         <th class="col-snapshot">Snapshot</th>
                     </tr>
                 </thead>
                 <tbody id="settings-body"></tbody>
             </table>
+        </div>
         </div>
 
         <div id="detail-panel" class="detail-panel" hidden>

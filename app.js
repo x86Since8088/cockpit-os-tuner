@@ -20,8 +20,10 @@
         snapshot: null,        /* loaded snapshot object or null */
         group: "all",
         profileId: null,
-        category: "",
+        categories: [],        /* multi-select; empty = all */
         search: "",
+        grouped: false,        /* when on, pinned settings split out on top */
+        pinned: [],            /* setting ids the user pinned */
         admin: false,          /* cockpit administrative access active */
         undo: [],              /* undo journal entries (newest last) */
         detailId: null         /* setting id currently open in the panel */
@@ -49,6 +51,42 @@
                 throw new Error(path + ": HTTP " + r.status);
             return r.json();
         });
+    }
+
+    /* Per-viewer UI conveniences (grouped toggle, pinned set). localStorage
+     * can be absent or throw; the page must work identically without it. */
+    function uiSave() {
+        try {
+            localStorage.setItem("tuner-ui", JSON.stringify({
+                grouped: state.grouped, pinned: state.pinned
+            }));
+        } catch (e) { /* ignore */ }
+    }
+
+    function uiRestore() {
+        try {
+            var raw = localStorage.getItem("tuner-ui");
+            if (!raw)
+                return;
+            var ui = JSON.parse(raw);
+            state.grouped = !!ui.grouped;
+            if (Array.isArray(ui.pinned))
+                state.pinned = ui.pinned.filter(function (id) {
+                    return state.settings.some(function (s) { return s.id === id; });
+                });
+        } catch (e) { /* ignore */ }
+    }
+
+    function isPinned(id) { return state.pinned.indexOf(id) !== -1; }
+
+    function togglePin(id) {
+        var i = state.pinned.indexOf(id);
+        if (i === -1)
+            state.pinned.push(id);
+        else
+            state.pinned.splice(i, 1);
+        uiSave();
+        render();
     }
 
     /* ---------------- value resolution ---------------- */
@@ -248,7 +286,7 @@
         return state.settings.filter(function (s) {
             if (state.group !== "all" && s.group !== state.group)
                 return false;
-            if (state.category && s.category !== state.category)
+            if (state.categories.length && state.categories.indexOf(s.category) === -1)
                 return false;
             if (q && (s.id + " " + s.title + " " + s.description).toLowerCase().indexOf(q) === -1)
                 return false;
@@ -256,44 +294,66 @@
         });
     }
 
+    function rowHtml(s, profile) {
+        var v = state.values[s.id] || { live: "…", persistent: "…" };
+        var profVal = profile && profile.values ? profile.values[s.id] : undefined;
+        var snapVal = state.snapshot && state.snapshot.values ? state.snapshot.values[s.id] : undefined;
+
+        var profClass = "", persClass = "", snapClass = "", liveClass = "";
+        if (profVal !== undefined && v.liveCmp != null) {
+            if (String(profVal).trim() === String(v.liveCmp).trim()) {
+                profClass = "cell-ok";
+                liveClass = "cell-ok";
+            } else {
+                profClass = "cell-mismatch";
+            }
+        }
+        if (v.persistentCmp != null && v.liveCmp != null &&
+            String(v.persistentCmp).trim() !== String(v.liveCmp).trim())
+            persClass = "cell-drift";
+        if (snapVal && snapVal.live != null && v.liveCmp != null &&
+            String(snapVal.live).trim() !== String(v.liveCmp).trim())
+            snapClass = "cell-changed";
+
+        var pinned = isPinned(s.id);
+        return "<tr data-id='" + esc(s.id) + "'>" +
+            "<td class='cell-pin'><button class='pin-btn" + (pinned ? " pinned" : "") +
+                "' data-pin='" + esc(s.id) + "' title='" +
+                (pinned ? "Unpin" : "Pin to top") + "' aria-pressed='" + pinned + "'>" +
+                (pinned ? "★" : "☆") + "</button></td>" +
+            "<td class='cell-name'><span class='setting-title'>" + esc(s.title) + "</span>" +
+                "<span class='setting-cat'>" + esc(s.category) + "</span></td>" +
+            "<td><span class='badge badge-" + esc(s.group) + "'>" + esc(s.group) + "</span>" +
+                (s.risk && s.risk !== "none" ? " <span class='risk risk-" + esc(s.risk) + "'>" + esc(s.risk) + "</span>" : "") + "</td>" +
+            "<td class='" + profClass + " col-profile'>" + (profVal === undefined ? "—" : esc(profVal)) + "</td>" +
+            "<td class='" + liveClass + " cell-mono col-live'>" + esc(v.live) + "</td>" +
+            "<td class='" + persClass + " cell-mono col-persistent'>" + esc(v.persistent) + "</td>" +
+            "<td class='" + snapClass + " cell-mono col-snapshot'>" +
+                (snapVal === undefined || !state.snapshot ? "—" : esc(snapVal.live == null ? "—" : snapVal.live)) + "</td>" +
+            "</tr>";
+    }
+
     function render() {
         var profile = activeProfile();
-        var body = $("settings-body");
-        var rows = visibleSettings().map(function (s) {
-            var v = state.values[s.id] || { live: "…", persistent: "…" };
-            var profVal = profile && profile.values ? profile.values[s.id] : undefined;
-            var snapVal = state.snapshot && state.snapshot.values ? state.snapshot.values[s.id] : undefined;
+        var visible = visibleSettings();
 
-            var profClass = "", persClass = "", snapClass = "", liveClass = "";
-            if (profVal !== undefined && v.liveCmp != null) {
-                if (String(profVal).trim() === String(v.liveCmp).trim()) {
-                    profClass = "cell-ok";
-                    liveClass = "cell-ok";
-                } else {
-                    profClass = "cell-mismatch";
-                }
-            }
-            if (v.persistentCmp != null && v.liveCmp != null &&
-                String(v.persistentCmp).trim() !== String(v.liveCmp).trim())
-                persClass = "cell-drift";
-            if (snapVal && snapVal.live != null && v.liveCmp != null &&
-                String(snapVal.live).trim() !== String(v.liveCmp).trim())
-                snapClass = "cell-changed";
-
-            return "<tr data-id='" + esc(s.id) + "'>" +
-                "<td class='cell-name'><span class='setting-title'>" + esc(s.title) + "</span>" +
-                    "<span class='setting-cat'>" + esc(s.category) + "</span></td>" +
-                "<td><span class='badge badge-" + esc(s.group) + "'>" + esc(s.group) + "</span>" +
-                    (s.risk && s.risk !== "none" ? " <span class='risk risk-" + esc(s.risk) + "'>" + esc(s.risk) + "</span>" : "") + "</td>" +
-                "<td class='" + profClass + " col-profile'>" + (profVal === undefined ? "—" : esc(profVal)) + "</td>" +
-                "<td class='" + liveClass + " cell-mono'>" + esc(v.live) + "</td>" +
-                "<td class='" + persClass + " cell-mono'>" + esc(v.persistent) + "</td>" +
-                "<td class='" + snapClass + " cell-mono col-snapshot'>" +
-                    (snapVal === undefined || !state.snapshot ? "—" : esc(snapVal.live == null ? "—" : snapVal.live)) + "</td>" +
-                "</tr>";
+        var pinnedRows = [], mainRows = [];
+        visible.forEach(function (s) {
+            if (state.grouped && isPinned(s.id))
+                pinnedRows.push(rowHtml(s, profile));
+            else
+                mainRows.push(rowHtml(s, profile));
         });
-        body.innerHTML = rows.join("") ||
-            "<tr><td colspan='6' class='empty'>No settings match the current filters.</td></tr>";
+
+        var pinnedWrap = $("pinned-wrap");
+        pinnedWrap.hidden = !(state.grouped && pinnedRows.length);
+        $("pinned-body").innerHTML = pinnedRows.join("");
+
+        $("settings-body").innerHTML = mainRows.join("") ||
+            "<tr><td colspan='7' class='empty'>" +
+            (state.grouped && pinnedRows.length
+                ? "Every matching setting is pinned above."
+                : "No settings match the current filters.") + "</td></tr>";
     }
 
     function rangeText(s) {
@@ -590,10 +650,12 @@
 
         var cats = {};
         state.settings.forEach(function (s) { cats[s.category] = true; });
-        $("category-select").innerHTML = "<option value=''>all</option>" +
-            Object.keys(cats).sort().map(function (c) {
-                return "<option value='" + esc(c) + "'>" + esc(c) + "</option>";
-            }).join("");
+        $("category-chips").innerHTML = Object.keys(cats).sort().map(function (c) {
+            var on = state.categories.indexOf(c) !== -1;
+            return "<button class='cat-chip" + (on ? " on" : "") + "' data-cat='" + esc(c) +
+                "' aria-pressed='" + on + "'>" + esc(c) + "</button>";
+        }).join("");
+        $("group-toggle").checked = state.grouped;
     }
 
     function bindEvents() {
@@ -613,8 +675,23 @@
         $("snapshot-select").addEventListener("change", function () {
             loadSnapshot(this.value);
         });
-        $("category-select").addEventListener("change", function () {
-            state.category = this.value;
+        $("category-chips").addEventListener("click", function (ev) {
+            var chip = ev.target.closest(".cat-chip");
+            if (!chip)
+                return;
+            var c = chip.dataset.cat;
+            var i = state.categories.indexOf(c);
+            if (i === -1)
+                state.categories.push(c);
+            else
+                state.categories.splice(i, 1);
+            chip.classList.toggle("on", i === -1);
+            chip.setAttribute("aria-pressed", String(i === -1));
+            render();
+        });
+        $("group-toggle").addEventListener("change", function () {
+            state.grouped = this.checked;
+            uiSave();
             render();
         });
         $("search-box").addEventListener("input", function () {
@@ -626,7 +703,15 @@
         });
         $("btn-snapshot").addEventListener("click", takeSnapshot);
         $("btn-undo").addEventListener("click", showUndoPanel);
-        $("settings-body").addEventListener("click", function (ev) {
+        /* One delegated listener covers both the pinned and the main tbody:
+         * the star toggles the pin, anywhere else on the row opens details. */
+        $("table-col").addEventListener("click", function (ev) {
+            var pin = ev.target.closest("button[data-pin]");
+            if (pin) {
+                ev.stopPropagation();
+                togglePin(pin.dataset.pin);
+                return;
+            }
             var tr = ev.target.closest("tr[data-id]");
             if (tr)
                 showDetail(tr.dataset.id);
@@ -664,6 +749,7 @@
             .then(function (res) {
                 state.settings = res[0].settings || [];
                 state.profiles = res[1].profiles || [];
+                uiRestore();
                 populateControls();
                 bindEvents();
                 render();
