@@ -739,6 +739,261 @@
             "recommended": "1000"
         },
         {
+            "id": "kernel.panic",
+            "title": "kernel.panic (reboot-on-panic timeout)",
+            "description": "Seconds to wait after a kernel panic before rebooting. 0 loops forever until a manual power-cycle. With kernel.panic_on_oops=1 (this host), any oops panics immediately and then HANGS until reboot \u2014 a real availability gap for an unattended server. Kernel docs recommend a positive timeout (60 when a software watchdog is present).",
+            "group": "safe",
+            "category": "kernel",
+            "risk": "low",
+            "source": "https://docs.kernel.org/admin-guide/sysctl/kernel.html",
+            "default": "0",
+            "recommended": "60 (auto-reboot after a panic)",
+            "range": {
+                "min": 0,
+                "max": 3600
+            },
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/kernel/panic"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "kernel.panic"
+            },
+            "edit": {
+                "class": "sysctl"
+            },
+            "verify": "sysctl kernel.panic",
+            "rollback": "sudo sysctl -w kernel.panic=0 (or remove the sysctl.d entry)."
+        },
+        {
+            "id": "kernel.panic_on_oops",
+            "title": "kernel.panic_on_oops",
+            "description": "1 = a kernel oops immediately panics (safer: a corrupted kernel does not limp on). Pairs with kernel.panic: with panic=0 the machine then hangs, with panic=60 it reboots. Ubuntu default is 1.",
+            "group": "info",
+            "category": "kernel",
+            "risk": "none",
+            "source": "https://docs.kernel.org/admin-guide/sysctl/kernel.html",
+            "default": "1",
+            "recommended": "1 (keep; set kernel.panic>0 alongside)",
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/kernel/panic_on_oops"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "kernel.panic_on_oops"
+            },
+            "verify": "sysctl kernel.panic_on_oops",
+            "rollback": "n/a (informational)"
+        },
+        {
+            "id": "kernel.sysrq",
+            "title": "kernel.sysrq (magic SysRq bitmask)",
+            "description": "Which magic SysRq keys are enabled. 176 = 128+32+16 = sync + remount-read-only + reboot/poweroff, with process-kill (64), debug dumps (8) and keyboard/SAK (4) disabled. This is the Debian/Ubuntu default (/etc/sysctl.d/10-magic-sysrq.conf) \u2014 a sane middle ground; 1 enables everything, 0 disables all.",
+            "group": "info",
+            "category": "kernel",
+            "risk": "none",
+            "source": "https://docs.kernel.org/admin-guide/sysrq.html",
+            "default": "176 (Ubuntu)",
+            "recommended": "176 (keep) \u2014 438 or 1 only for kernel debugging",
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/kernel/sysrq"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "kernel.sysrq"
+            },
+            "verify": "sysctl kernel.sysrq",
+            "rollback": "n/a (informational)"
+        },
+        {
+            "id": "vm.vfs_cache_pressure",
+            "title": "vm.vfs_cache_pressure",
+            "description": "How hard the kernel reclaims dentry/inode caches vs page cache. 100 is balanced. 0 never reclaims them and can drive OOM; values well above 100 waste CPU searching for reclaimable slab. Keep at 100 unless a measured metadata-cache problem says otherwise.",
+            "group": "aggressive",
+            "category": "memory",
+            "risk": "medium",
+            "source": "https://docs.kernel.org/admin-guide/sysctl/vm.html",
+            "default": "100",
+            "recommended": "100 (keep; do not set to 0)",
+            "range": {
+                "min": 1,
+                "max": 1000
+            },
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/vm/vfs_cache_pressure"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "vm.vfs_cache_pressure"
+            },
+            "edit": {
+                "class": "sysctl"
+            },
+            "verify": "sysctl vm.vfs_cache_pressure",
+            "rollback": "sudo sysctl -w vm.vfs_cache_pressure=100."
+        },
+        {
+            "id": "vm.page-cluster",
+            "title": "vm.page-cluster",
+            "description": "Swap read-ahead as a power of two (3 = 8 pages per fault). Default 3. 0 is commonly advised for zram/SSD swap (lower fault latency); higher values prefetch more. Recent kernels bypass read-ahead on synchronous-IO swap devices anyway.",
+            "group": "aggressive",
+            "category": "memory",
+            "risk": "low",
+            "source": "https://docs.kernel.org/admin-guide/sysctl/vm.html",
+            "default": "3",
+            "recommended": "3 (disk swap) / 0 (zram or SSD swap)",
+            "range": {
+                "min": 0,
+                "max": 8
+            },
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/vm/page-cluster"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "vm.page-cluster"
+            },
+            "edit": {
+                "class": "sysctl"
+            },
+            "verify": "sysctl vm.page-cluster",
+            "rollback": "sudo sysctl -w vm.page-cluster=3."
+        },
+        {
+            "id": "vm.compaction_proactiveness",
+            "title": "vm.compaction_proactiveness",
+            "description": "How aggressively the kernel proactively compacts memory for hugepages, 0\u2013100 (default 20). Extremes like 100 cause excessive background compaction and, because it migrates other processes' pages, latency spikes \u2014 relevant with latency-sensitive VMs on this host.",
+            "group": "aggressive",
+            "category": "memory",
+            "risk": "medium",
+            "source": "https://docs.kernel.org/admin-guide/sysctl/vm.html",
+            "default": "20",
+            "recommended": "20 (keep; avoid extremes)",
+            "range": {
+                "min": 0,
+                "max": 100
+            },
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/vm/compaction_proactiveness"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "vm.compaction_proactiveness"
+            },
+            "edit": {
+                "class": "sysctl"
+            },
+            "verify": "sysctl vm.compaction_proactiveness",
+            "rollback": "sudo sysctl -w vm.compaction_proactiveness=20."
+        },
+        {
+            "id": "vm.zone_reclaim_mode",
+            "title": "vm.zone_reclaim_mode",
+            "description": "Whether the kernel reclaims within a NUMA node before spilling to others. Default 0 (off). Kernel docs explicitly recommend keeping it disabled for file-server and cache-heavy workloads \u2014 the page-cache benefit beats NUMA locality here.",
+            "group": "info",
+            "category": "memory",
+            "risk": "low",
+            "source": "https://docs.kernel.org/admin-guide/sysctl/vm.html",
+            "default": "0",
+            "recommended": "0 (keep)",
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/vm/zone_reclaim_mode"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "vm.zone_reclaim_mode"
+            },
+            "verify": "sysctl vm.zone_reclaim_mode",
+            "rollback": "n/a (keep at 0)"
+        },
+        {
+            "id": "fs.protected_regular",
+            "title": "fs.protected_regular",
+            "description": "Blocks O_CREAT opens of regular files you don't own in sticky world-writable (1) or also group-writable (2) dirs \u2014 a /tmp symlink/hardlink-class hardening. Ubuntu default 2. Lowering it re-opens a class of local privilege bugs.",
+            "group": "safe",
+            "category": "diagnostics",
+            "risk": "low",
+            "source": "https://docs.kernel.org/admin-guide/sysctl/fs.html",
+            "default": "2",
+            "recommended": "2 (keep)",
+            "choices": [
+                "0",
+                "1",
+                "2"
+            ],
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/fs/protected_regular"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "fs.protected_regular"
+            },
+            "verify": "sysctl fs.protected_regular",
+            "rollback": "n/a (keep at 2)"
+        },
+        {
+            "id": "fs.protected_fifos",
+            "title": "fs.protected_fifos",
+            "description": "Same hardening as fs.protected_regular but for FIFOs. Ubuntu default 1 (world-writable sticky dirs).",
+            "group": "safe",
+            "category": "diagnostics",
+            "risk": "low",
+            "source": "https://docs.kernel.org/admin-guide/sysctl/fs.html",
+            "default": "1",
+            "recommended": "1 (keep)",
+            "choices": [
+                "0",
+                "1",
+                "2"
+            ],
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/fs/protected_fifos"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "fs.protected_fifos"
+            },
+            "verify": "sysctl fs.protected_fifos",
+            "rollback": "n/a (keep at 1)"
+        },
+        {
+            "id": "net.core.somaxconn",
+            "title": "net.core.somaxconn",
+            "description": "Max length of the accept() backlog a listening socket can request. Kernel default is 4096 since Linux 5.4 (was 128), so this host is at the default. Per-netns, so containers get their own. Adequate for this workload.",
+            "group": "info",
+            "category": "network",
+            "risk": "low",
+            "source": "https://docs.kernel.org/admin-guide/sysctl/net.html",
+            "default": "4096",
+            "recommended": "4096 (default; raise only for very high connection rates)",
+            "range": {
+                "min": 128,
+                "max": 65535
+            },
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/net/core/somaxconn"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "net.core.somaxconn"
+            },
+            "edit": {
+                "class": "sysctl"
+            },
+            "verify": "sysctl net.core.somaxconn",
+            "rollback": "sudo sysctl -w net.core.somaxconn=4096."
+        },
+        {
             "id": "disk.nvme0n1.scheduler",
             "title": "nvme0n1 I/O scheduler",
             "description": "Block I/O scheduler for nvme0n1 (ssd). 'none' suits fast NVMe (the device reorders internally); mq-deadline adds fairness for SATA; bfq favors desktop interactivity on slower disks.",
@@ -746,8 +1001,9 @@
             "category": "device - disk - nvme0n1",
             "risk": "medium",
             "generated": true,
+            "source": "https://docs.redhat.com (RHEL 9 disk-scheduler guide) / kernel block docs",
             "default": "none",
-            "recommended": "none (NVMe) / mq-deadline (SATA)",
+            "recommended": "none \u2014 kernel default for multi-queue NVMe and Red Hat's explicit recommendation; leave it",
             "choices": [
                 "none",
                 "mq-deadline"
@@ -773,8 +1029,9 @@
             "category": "device - disk - nvme0n1",
             "risk": "low",
             "generated": true,
+            "source": "Linux mm: VM_READAHEAD_PAGES (SZ_128K), include/linux/mm.h",
             "default": "128",
-            "recommended": "128 (default) \u2013 512 for sequential-heavy use",
+            "recommended": "128 (kernel mm default, not per-device-tuned) \u2013 raise to 256\u2013512 only for sequential-heavy use",
             "range": {
                 "min": 0,
                 "max": 16384
@@ -820,8 +1077,9 @@
             "category": "device - disk - nvme1n1",
             "risk": "medium",
             "generated": true,
+            "source": "https://docs.redhat.com (RHEL 9 disk-scheduler guide) / kernel block docs",
             "default": "none",
-            "recommended": "none (NVMe) / mq-deadline (SATA)",
+            "recommended": "none \u2014 kernel default for multi-queue NVMe and Red Hat's explicit recommendation; leave it",
             "choices": [
                 "none",
                 "mq-deadline"
@@ -847,8 +1105,9 @@
             "category": "device - disk - nvme1n1",
             "risk": "low",
             "generated": true,
+            "source": "Linux mm: VM_READAHEAD_PAGES (SZ_128K), include/linux/mm.h",
             "default": "128",
-            "recommended": "128 (default) \u2013 512 for sequential-heavy use",
+            "recommended": "128 (kernel mm default, not per-device-tuned) \u2013 raise to 256\u2013512 only for sequential-heavy use",
             "range": {
                 "min": 0,
                 "max": 16384
@@ -894,8 +1153,9 @@
             "category": "device - disk - sda",
             "risk": "medium",
             "generated": true,
+            "source": "https://docs.redhat.com (RHEL 9 disk-scheduler guide) / kernel block docs",
             "default": "mq-deadline",
-            "recommended": "none (NVMe) / mq-deadline (SATA)",
+            "recommended": "mq-deadline (Ubuntu/kernel default for single-queue; bfq for desktop latency, none/kyber for max IOPS \u2014 contested)",
             "choices": [
                 "none",
                 "mq-deadline"
@@ -921,8 +1181,9 @@
             "category": "device - disk - sda",
             "risk": "low",
             "generated": true,
+            "source": "Linux mm: VM_READAHEAD_PAGES (SZ_128K), include/linux/mm.h",
             "default": "128",
-            "recommended": "128 (default) \u2013 512 for sequential-heavy use",
+            "recommended": "128 (kernel mm default, not per-device-tuned) \u2013 raise to 256\u2013512 only for sequential-heavy use",
             "range": {
                 "min": 0,
                 "max": 16384
@@ -968,8 +1229,9 @@
             "category": "device - disk - sdb",
             "risk": "medium",
             "generated": true,
+            "source": "https://docs.redhat.com (RHEL 9 disk-scheduler guide) / kernel block docs",
             "default": "mq-deadline",
-            "recommended": "none (NVMe) / mq-deadline (SATA)",
+            "recommended": "mq-deadline (Ubuntu/kernel default for single-queue; bfq for desktop latency, none/kyber for max IOPS \u2014 contested)",
             "choices": [
                 "none",
                 "mq-deadline"
@@ -995,8 +1257,9 @@
             "category": "device - disk - sdb",
             "risk": "low",
             "generated": true,
+            "source": "Linux mm: VM_READAHEAD_PAGES (SZ_128K), include/linux/mm.h",
             "default": "128",
-            "recommended": "128 (default) \u2013 512 for sequential-heavy use",
+            "recommended": "128 (kernel mm default, not per-device-tuned) \u2013 raise to 256\u2013512 only for sequential-heavy use",
             "range": {
                 "min": 0,
                 "max": 16384
@@ -1042,8 +1305,9 @@
             "category": "device - disk - sdc",
             "risk": "medium",
             "generated": true,
+            "source": "https://docs.redhat.com (RHEL 9 disk-scheduler guide) / kernel block docs",
             "default": "mq-deadline",
-            "recommended": "none (NVMe) / mq-deadline (SATA)",
+            "recommended": "mq-deadline (Ubuntu/kernel default for single-queue; bfq for desktop latency, none/kyber for max IOPS \u2014 contested)",
             "choices": [
                 "none",
                 "mq-deadline"
@@ -1069,8 +1333,9 @@
             "category": "device - disk - sdc",
             "risk": "low",
             "generated": true,
+            "source": "Linux mm: VM_READAHEAD_PAGES (SZ_128K), include/linux/mm.h",
             "default": "128",
-            "recommended": "128 (default) \u2013 512 for sequential-heavy use",
+            "recommended": "128 (kernel mm default, not per-device-tuned) \u2013 raise to 256\u2013512 only for sequential-heavy use",
             "range": {
                 "min": 0,
                 "max": 16384
@@ -1143,8 +1408,9 @@
             "category": "device - cpu - cpufreq",
             "risk": "low",
             "generated": true,
+            "source": "kernel amd-pstate admin-guide",
             "default": "balance_performance",
-            "recommended": "balance_performance for a desktop workstation",
+            "recommended": "balance_performance (desktop). Note: on Zen2 (3960X) amd-pstate uses the slower shared-memory CPPC path \u2014 the firmware, not the governor, picks frequency from min/max + this EPP hint; effect is real but less studied than on MSR-based Zen3+",
             "choices": [
                 "default",
                 "performance",

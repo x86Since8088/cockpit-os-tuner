@@ -386,6 +386,10 @@
             "<dt>Default</dt><dd class='cell-mono'>" + esc(s.default || "—") + "</dd>" +
             "<dt>Recommended</dt><dd class='cell-mono'>" + esc(s.recommended || "—") + "</dd>" +
             (rangeText(s) ? "<dt>Allowed</dt><dd class='cell-mono'>" + esc(rangeText(s)) + "</dd>" : "") +
+            (s.source ? "<dt>Source</dt><dd class='src-cell'>" +
+                (/^https?:/.test(s.source)
+                    ? "<a href='" + esc(s.source) + "' target='_blank' rel='noopener'>" + esc(s.source) + "</a>"
+                    : esc(s.source)) + "</dd>" : "") +
             "<dt>Live value</dt><dd class='cell-mono'>" + esc(v.live || "—") + "</dd>" +
             "<dt>Persistent</dt><dd class='cell-mono'>" + esc(v.persistent || "—") +
                 (v.persistentDetail ? "<pre>" + esc(v.persistentDetail) + "</pre>" : "") + "</dd>" +

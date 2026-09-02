@@ -35,7 +35,13 @@
                 "vm.swappiness": "10",
                 "fs.inotify.max_user_watches": "524288",
                 "fs.inotify.max_user_instances": "1024",
-                "vm.max_map_count": "1048576"
+                "vm.max_map_count": "1048576",
+                "kernel.panic": "60",
+                "kernel.panic_on_oops": "1",
+                "vm.vfs_cache_pressure": "100",
+                "vm.zone_reclaim_mode": "0",
+                "fs.protected_regular": "2",
+                "fs.protected_fifos": "1"
             }
         },
         {
