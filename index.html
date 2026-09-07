@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Tuner</title>
+    <link rel="stylesheet" href="tuner.css">
+    <script src="../base1/cockpit.js"></script>
+</head>
+<body>
+    <div id="app">
+        <header class="tuner-header">
+            <div>
+                <h1>System Tuner</h1>
+                <p class="subtitle">Browse tuning schemas &amp; profiles — compare against live, persistent, and historical settings · <a href="https://claude.ai/code/artifact/79866b32-32af-4754-b930-15f720ec0e73" target="_blank" rel="noopener">tuning report</a></p>
+            </div>
+            <div class="header-actions">
+                <span id="mode-badge" class="badge badge-mock" hidden>MOCK MODE — not connected to cockpit-bridge</span>
+                <button id="btn-undo" class="btn">Undo history</button>
+                <button id="btn-refresh" class="btn">Refresh live</button>
+                <button id="btn-snapshot" class="btn btn-primary">Take snapshot</button>
+            </div>
+        </header>
+
+        <nav class="group-tabs" id="group-tabs">
+            <button class="tab active" data-group="all">All</button>
+            <button class="tab" data-group="safe">Safe &amp; well-supported</button>
+            <button class="tab" data-group="aggressive">More aggressive</button>
+            <button class="tab" data-group="tkg">linux-tkg kernel</button>
+            <button class="tab" data-group="info">System info</button>
+        </nav>
+
+        <div class="controls">
+            <label>Profile:
+                <select id="profile-select"></select>
+            </label>
+            <label>Snapshot:
+                <select id="snapshot-select">
+                    <option value="">— none —</option>
+                </select>
+            </label>
+            <span class="cat-filter">Category:
+                <span id="category-chips"></span>
+            </span>
+            <label class="group-toggle" title="Pinned settings stay at the top while the rest scrolls">
+                <input type="checkbox" id="group-toggle"> Grouped
+            </label>
+            <input type="search" id="search-box" placeholder="Filter settings…">
+            <span id="status-line" class="status-line"></span>
+        </div>
+
+        <div class="legend">
+            <span class="chip chip-drift">drift: live ≠ persistent</span>
+            <span class="chip chip-mismatch">off-profile: live ≠ profile</span>
+            <span class="chip chip-changed">changed since snapshot</span>
+            <span class="chip chip-ok">matches profile</span>
+        </div>
+
+        <div class="main-row">
+        <div class="table-col" id="table-col">
+        <div class="pinned-wrap" id="pinned-wrap" hidden>
+            <table class="pinned-table">
+                <thead>
+                    <tr>
+                        <th class="col-pin" title="Pinned"></th>
+                        <th>Setting</th>
+                        <th>Group / Risk</th>
+                        <th class="col-profile">Profile</th>
+                        <th class="col-live">Live</th>
+                        <th class="col-persistent">Persistent</th>
+                        <th class="col-snapshot">Snapshot</th>
+                    </tr>
+                </thead>
+                <tbody id="pinned-body"></tbody>
+            </table>
+        </div>
+        <div class="table-wrap">
+            <table id="settings-table">
+                <thead>
+                    <tr>
+                        <th class="col-pin" title="Pin to top"></th>
+                        <th>Setting</th>
+                        <th>Group / Risk</th>
+                        <th class="col-profile">Profile</th>
+                        <th class="col-live">Live</th>
+                        <th class="col-persistent">Persistent</th>
+                        <th class="col-snapshot">Snapshot</th>
+                    </tr>
+                </thead>
+                <tbody id="settings-body"></tbody>
+            </table>
+        </div>
+        </div>
+
+        <div id="detail-panel" class="detail-panel" hidden>
+            <button class="detail-close" id="detail-close">✕</button>
+            <div id="detail-content"></div>
+        </div>
+        </div>
+    </div>
+
+    <script src="adapter.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

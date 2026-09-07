@@ -1,0 +1,17 @@
+{
+    "version": 0,
+    "requires": {
+        "cockpit": "266"
+    },
+    "menu": {
+        "index": {
+            "label": "System Tuner",
+            "order": 55,
+            "keywords": [
+                {
+                    "matches": ["tuner", "tuning", "sysctl", "stability", "performance", "profiles", "snapshot"]
+                }
+            ]
+        }
+    }
+}

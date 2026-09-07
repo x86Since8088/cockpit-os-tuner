@@ -1,0 +1,1509 @@
+{
+    "version": 1,
+    "note": "Data-driven settings schema. Each entry declares how to read the LIVE value, where the PERSISTENT value lives, its DEFAULT and RECOMMENDED value (or range/choices), and - when safely editable - an edit descriptor (class sysctl|sysfs) for the admin-gated apply engine. Groups: safe | aggressive | tkg | info.",
+    "settings": [
+        {
+            "id": "vm.swappiness",
+            "title": "vm.swappiness",
+            "description": "How aggressively the kernel swaps anonymous memory. On a 128GB workstation lower values keep app pages resident and reduce latency stalls that can trip browser watchdogs.",
+            "group": "safe",
+            "category": "memory",
+            "risk": "low",
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/vm/swappiness"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "vm.swappiness"
+            },
+            "verify": "sysctl vm.swappiness",
+            "rollback": "Remove the entry from /etc/sysctl.d/ and run: sudo sysctl -w vm.swappiness=60",
+            "default": "60",
+            "recommended": "10",
+            "range": {
+                "min": 0,
+                "max": 200
+            },
+            "edit": {
+                "class": "sysctl"
+            }
+        },
+        {
+            "id": "fs.inotify.max_user_watches",
+            "title": "fs.inotify.max_user_watches",
+            "description": "Max files a user can watch with inotify. VS Code / Electron file watchers exhaust the 65536 default on large trees, causing degraded behavior and crashes in some apps.",
+            "group": "safe",
+            "category": "limits",
+            "risk": "low",
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/fs/inotify/max_user_watches"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "fs.inotify.max_user_watches"
+            },
+            "verify": "sysctl fs.inotify.max_user_watches",
+            "rollback": "Remove the entry from /etc/sysctl.d/; default restores on reboot.",
+            "default": "65536",
+            "recommended": "524288",
+            "range": {
+                "min": 8192,
+                "max": 4194304
+            },
+            "edit": {
+                "class": "sysctl"
+            }
+        },
+        {
+            "id": "fs.inotify.max_user_instances",
+            "title": "fs.inotify.max_user_instances",
+            "description": "Max inotify instances per user. Electron apps each hold several; the default of 128 can run out with many apps open.",
+            "group": "safe",
+            "category": "limits",
+            "risk": "low",
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/fs/inotify/max_user_instances"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "fs.inotify.max_user_instances"
+            },
+            "verify": "sysctl fs.inotify.max_user_instances",
+            "rollback": "Remove the entry from /etc/sysctl.d/; default restores on reboot.",
+            "default": "128",
+            "recommended": "1024",
+            "range": {
+                "min": 64,
+                "max": 8192
+            },
+            "edit": {
+                "class": "sysctl"
+            }
+        },
+        {
+            "id": "vm.max_map_count",
+            "title": "vm.max_map_count",
+            "description": "Max memory-mapped areas per process. Modern browsers and Electron map thousands of regions; too low a value produces hard-to-diagnose crashes.",
+            "group": "safe",
+            "category": "memory",
+            "risk": "low",
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/vm/max_map_count"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "vm.max_map_count"
+            },
+            "verify": "sysctl vm.max_map_count",
+            "rollback": "Remove the entry from /etc/sysctl.d/; default restores on reboot.",
+            "default": "1048576",
+            "recommended": "1048576",
+            "range": {
+                "min": 65530,
+                "max": 16777216
+            },
+            "edit": {
+                "class": "sysctl"
+            }
+        },
+        {
+            "id": "kernel.core_pattern",
+            "title": "kernel.core_pattern",
+            "description": "Where core dumps go. Ubuntu pipes them to apport, which feeds /var/crash \u2014 keep this intact while diagnosing the Firefox/Electron crashes.",
+            "group": "safe",
+            "category": "diagnostics",
+            "risk": "low",
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/kernel/core_pattern"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "kernel.core_pattern"
+            },
+            "verify": "cat /proc/sys/kernel/core_pattern",
+            "rollback": "Managed by apport.service; restart it to restore.",
+            "default": "|/usr/share/apport/apport %p %s %c %d %P %E",
+            "recommended": "keep apport pipeline while diagnosing"
+        },
+        {
+            "id": "systemd-oomd.state",
+            "title": "systemd-oomd service",
+            "description": "Userspace OOM killer. Known to kill entire app slices (browser included) under memory pressure \u2014 a classic cause of 'silent' browser disappearance.",
+            "group": "safe",
+            "category": "oom",
+            "risk": "low",
+            "live": {
+                "type": "command",
+                "argv": [
+                    "systemctl",
+                    "is-active",
+                    "systemd-oomd"
+                ]
+            },
+            "persistent": {
+                "type": "command",
+                "argv": [
+                    "systemctl",
+                    "is-enabled",
+                    "systemd-oomd"
+                ]
+            },
+            "verify": "oomctl (as root) shows monitored cgroups",
+            "rollback": "sudo systemctl enable --now systemd-oomd",
+            "default": "active",
+            "recommended": "active"
+        },
+        {
+            "id": "oomd.ManagedOOMSwap-root",
+            "title": "oomd ManagedOOMSwap (root slice)",
+            "description": "Ubuntu's fix for the notorious 22.04 'oomd kills Firefox/VS Code' bug (LP #1972159) set ManagedOOMSwap=auto on -.slice. Expect 'auto'; 'kill' means the swap-kill misfire mode is active.",
+            "group": "safe",
+            "category": "oom",
+            "risk": "low",
+            "live": {
+                "type": "command",
+                "argv": [
+                    "systemctl",
+                    "show",
+                    "-p",
+                    "ManagedOOMSwap",
+                    "--value",
+                    "--",
+                    "-.slice"
+                ]
+            },
+            "persistent": {
+                "type": "command",
+                "argv": [
+                    "sh",
+                    "-c",
+                    "grep -hsE '^ManagedOOMSwap=' /usr/lib/systemd/system/-.slice.d/*.conf /etc/systemd/system/-.slice.d/*.conf 2>/dev/null | tail -1 | cut -d= -f2"
+                ]
+            },
+            "verify": "systemctl show -- -.slice | grep ^ManagedOOMSwap  (expect auto)",
+            "rollback": "Remove any local -.slice.d override; Ubuntu default is auto.",
+            "default": "auto",
+            "recommended": "auto"
+        },
+        {
+            "id": "mglru.min_ttl_ms",
+            "title": "MGLRU min_ttl_ms",
+            "description": "MGLRU anti-thrashing valve. Nonzero values protect the recent working set but invoke the kernel OOM killer to terminate apps when it can't stay resident \u2014 a candidate explanation for unexplained app deaths. Default 0 (disabled); such kills are logged in dmesg/journal.",
+            "group": "aggressive",
+            "category": "memory",
+            "risk": "high",
+            "live": {
+                "type": "procfile",
+                "path": "/sys/kernel/mm/lru_gen/min_ttl_ms"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "verify": "cat /sys/kernel/mm/lru_gen/min_ttl_ms",
+            "rollback": "echo 0 | sudo tee /sys/kernel/mm/lru_gen/min_ttl_ms",
+            "default": "0",
+            "recommended": "0",
+            "range": {
+                "min": 0,
+                "max": 60000
+            },
+            "edit": {
+                "class": "sysfs"
+            }
+        },
+        {
+            "id": "oomd.DefaultMemoryPressureLimit",
+            "title": "oomd DefaultMemoryPressureLimit",
+            "description": "Memory-pressure threshold above which systemd-oomd starts killing. Raising it (or the duration) makes oomd less trigger-happy on a big-RAM box.",
+            "group": "aggressive",
+            "category": "oom",
+            "risk": "medium",
+            "live": {
+                "type": "none"
+            },
+            "persistent": {
+                "type": "file-regex",
+                "path": "/etc/systemd/oomd.conf",
+                "regex": "^\\s*DefaultMemoryPressureLimit\\s*=\\s*(.+)$"
+            },
+            "verify": "systemd-analyze cat-config systemd/oomd.conf",
+            "rollback": "Comment the line out in /etc/systemd/oomd.conf and restart systemd-oomd.",
+            "default": "60% (commented)",
+            "recommended": "60%; raise to 80% only after observed oomd kills"
+        },
+        {
+            "id": "vm.overcommit_memory",
+            "title": "vm.overcommit_memory",
+            "description": "Kernel overcommit policy. 0 = heuristic (default). Changing this affects how allocations fail versus how the OOM killer engages.",
+            "group": "aggressive",
+            "category": "memory",
+            "risk": "medium",
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/vm/overcommit_memory"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "vm.overcommit_memory"
+            },
+            "verify": "sysctl vm.overcommit_memory",
+            "rollback": "sudo sysctl -w vm.overcommit_memory=0",
+            "default": "0",
+            "recommended": "0",
+            "choices": [
+                "0",
+                "1",
+                "2"
+            ],
+            "edit": {
+                "class": "sysctl"
+            }
+        },
+        {
+            "id": "vm.min_free_kbytes",
+            "title": "vm.min_free_kbytes",
+            "description": "Reserved free memory floor. Raising it gives the kernel headroom during allocation bursts (reduces atomic-allocation failures); too high wastes RAM and can trigger early reclaim.",
+            "group": "aggressive",
+            "category": "memory",
+            "risk": "medium",
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/vm/min_free_kbytes"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "vm.min_free_kbytes"
+            },
+            "verify": "sysctl vm.min_free_kbytes",
+            "rollback": "Remove the sysctl.d entry; reboot restores the auto-computed default.",
+            "default": "auto-computed (67584 on 128GB)",
+            "recommended": "67584-262144",
+            "range": {
+                "min": 16384,
+                "max": 1048576
+            },
+            "edit": {
+                "class": "sysctl"
+            }
+        },
+        {
+            "id": "thp.enabled",
+            "title": "Transparent hugepages",
+            "description": "THP mode: always / madvise / never. 'always' can cause latency spikes and memory bloat in browsers; 'madvise' is the common stability recommendation.",
+            "group": "aggressive",
+            "category": "memory",
+            "risk": "medium",
+            "live": {
+                "type": "procfile-bracket",
+                "path": "/sys/kernel/mm/transparent_hugepage/enabled"
+            },
+            "persistent": {
+                "type": "file-regex",
+                "path": "/etc/default/grub",
+                "regex": "transparent_hugepage=(\\S+)"
+            },
+            "verify": "cat /sys/kernel/mm/transparent_hugepage/enabled",
+            "rollback": "Remove transparent_hugepage= from GRUB_CMDLINE_LINUX_DEFAULT, update-grub, reboot.",
+            "default": "madvise",
+            "recommended": "madvise",
+            "choices": [
+                "always",
+                "madvise",
+                "never"
+            ],
+            "edit": {
+                "class": "sysfs"
+            }
+        },
+        {
+            "id": "mglru.enabled",
+            "title": "MGLRU (multi-gen LRU)",
+            "description": "Multi-generational LRU page reclaim. Bitmask in /sys/kernel/mm/lru_gen/enabled; improves reclaim behavior under pressure on recent kernels.",
+            "group": "aggressive",
+            "category": "memory",
+            "risk": "medium",
+            "live": {
+                "type": "procfile",
+                "path": "/sys/kernel/mm/lru_gen/enabled"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "verify": "cat /sys/kernel/mm/lru_gen/enabled",
+            "rollback": "echo the previous bitmask back, or reboot.",
+            "default": "0x0007",
+            "recommended": "0x0007; A/B test off (n) for reclaim stalls",
+            "choices": [
+                "y",
+                "n"
+            ],
+            "edit": {
+                "class": "sysfs"
+            }
+        },
+        {
+            "id": "limits.nofile",
+            "title": "Open-file limit (soft)",
+            "description": "Per-process file descriptor soft limit for the session. Electron apps with many IPC pipes and sockets can hit low limits.",
+            "group": "safe",
+            "category": "limits",
+            "risk": "low",
+            "live": {
+                "type": "command",
+                "argv": [
+                    "sh",
+                    "-c",
+                    "ulimit -n"
+                ]
+            },
+            "persistent": {
+                "type": "file-regex",
+                "path": "/etc/systemd/system.conf",
+                "regex": "^\\s*DefaultLimitNOFILE\\s*=\\s*(.+)$"
+            },
+            "verify": "ulimit -n in a fresh shell",
+            "rollback": "Comment the line out in /etc/systemd/system.conf; reboot.",
+            "default": "1024 (session soft)",
+            "recommended": "1024 unless an app exhausts fds"
+        },
+        {
+            "id": "gpu.driver",
+            "title": "GPU kernel driver",
+            "description": "Which kernel driver drives the RTX 3060. nouveau on GA104 is a major crash source for browser GPU processes under Wayland; the proprietary/open NVIDIA driver is the usual stability fix.",
+            "group": "info",
+            "category": "gpu",
+            "risk": "none",
+            "live": {
+                "type": "command",
+                "argv": [
+                    "sh",
+                    "-c",
+                    "lspci -k | grep -A3 -i 'vga\\|3d' | grep -m1 'Kernel driver in use' | sed 's/.*: //'"
+                ]
+            },
+            "persistent": {
+                "type": "command",
+                "argv": [
+                    "sh",
+                    "-c",
+                    "ls /etc/modprobe.d/ 2>/dev/null | grep -m1 -i 'nvidia\\|nouveau' || echo 'no modprobe override'"
+                ]
+            },
+            "verify": "lspci -k | grep -A3 VGA",
+            "rollback": "ubuntu-drivers / apt manage driver packages.",
+            "default": "nouveau (in-tree)",
+            "recommended": "nvidia (ubuntu-drivers: nvidia-driver-595-open)"
+        },
+        {
+            "id": "kernel.cmdline",
+            "title": "Kernel command line",
+            "description": "Boot parameters. Live value is what the running kernel booted with; persistent is GRUB_CMDLINE_LINUX_DEFAULT in /etc/default/grub.",
+            "group": "info",
+            "category": "kernel",
+            "risk": "none",
+            "live": {
+                "type": "procfile",
+                "path": "/proc/cmdline"
+            },
+            "persistent": {
+                "type": "file-regex",
+                "path": "/etc/default/grub",
+                "regex": "^GRUB_CMDLINE_LINUX_DEFAULT=\"(.*)\""
+            },
+            "verify": "cat /proc/cmdline",
+            "rollback": "Edit /etc/default/grub, sudo update-grub, reboot.",
+            "default": "quiet splash",
+            "recommended": "quiet splash (no tuning params needed)"
+        },
+        {
+            "id": "swap.devices",
+            "title": "Swap devices",
+            "description": "Active swap. Currently an 8G swapfile and no zram; zram is a common recommendation to smooth memory pressure spikes.",
+            "group": "info",
+            "category": "memory",
+            "risk": "none",
+            "live": {
+                "type": "command",
+                "argv": [
+                    "sh",
+                    "-c",
+                    "swapon --show --noheadings | tr -s ' ' | head -3"
+                ]
+            },
+            "persistent": {
+                "type": "command",
+                "argv": [
+                    "sh",
+                    "-c",
+                    "grep -hsE '\\bswap\\b' /etc/fstab | grep -v '^#' | head -3; echo"
+                ]
+            },
+            "verify": "swapon --show",
+            "rollback": "n/a (informational)",
+            "default": "/swap.img 8G",
+            "recommended": "keep swap present - systemd-oomd requires it"
+        },
+        {
+            "id": "kernel.release",
+            "title": "Running kernel",
+            "description": "Kernel release currently booted.",
+            "group": "info",
+            "category": "kernel",
+            "risk": "none",
+            "live": {
+                "type": "command",
+                "argv": [
+                    "uname",
+                    "-r"
+                ]
+            },
+            "persistent": {
+                "type": "command",
+                "argv": [
+                    "sh",
+                    "-c",
+                    "ls -1 /boot/vmlinuz-* 2>/dev/null | sed 's|/boot/vmlinuz-||' | sort | tail -3 | paste -sd ', '"
+                ]
+            },
+            "verify": "uname -r",
+            "rollback": "Select another kernel from the GRUB menu.",
+            "default": "Ubuntu HWE generic kernel",
+            "recommended": "stock generic kernel"
+        },
+        {
+            "id": "tkg.installed",
+            "title": "linux-tkg kernel installed",
+            "description": "Whether a linux-tkg custom kernel is present in /boot. The tkg section of the tuning report covers building one (scheduler choice, config options, DKMS caveats).",
+            "group": "tkg",
+            "category": "kernel",
+            "risk": "none",
+            "live": {
+                "type": "command",
+                "argv": [
+                    "sh",
+                    "-c",
+                    "ls -1 /boot/vmlinuz-*tkg* 2>/dev/null | paste -sd ', ' || true"
+                ],
+                "emptyAs": "not installed"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "verify": "ls /boot/vmlinuz-*",
+            "rollback": "Boot the stock Ubuntu kernel from GRUB; remove tkg packages.",
+            "default": "not installed",
+            "recommended": "not installed (experimental track only)"
+        },
+        {
+            "id": "tkg.sched_bore",
+            "title": "BORE scheduler",
+            "description": "kernel.sched_bore exists only on kernels built with the BORE scheduler (a common linux-tkg choice). Absent on stock Ubuntu EEVDF kernels.",
+            "group": "tkg",
+            "category": "kernel",
+            "risk": "none",
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/kernel/sched_bore",
+                "emptyAs": "not present (EEVDF)"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "verify": "cat /proc/sys/kernel/sched_bore",
+            "rollback": "n/a (kernel build option)",
+            "default": "not present (EEVDF)",
+            "recommended": "EEVDF (stock; tkg's own guidance)"
+        },
+        {
+            "id": "tkg.preempt",
+            "title": "Preemption model",
+            "description": "PREEMPT_DYNAMIC on stock Ubuntu; linux-tkg builds often use full preempt. Boot-time selectable via preempt= on dynamic kernels.",
+            "group": "tkg",
+            "category": "kernel",
+            "risk": "none",
+            "live": {
+                "type": "command",
+                "argv": [
+                    "sh",
+                    "-c",
+                    "uname -v | grep -o 'PREEMPT[_A-Z]*' | head -1"
+                ]
+            },
+            "persistent": {
+                "type": "file-regex",
+                "path": "/etc/default/grub",
+                "regex": "preempt=(\\S+)"
+            },
+            "verify": "uname -v",
+            "rollback": "Remove preempt= from the kernel command line.",
+            "default": "PREEMPT_DYNAMIC",
+            "recommended": "PREEMPT_DYNAMIC"
+        },
+        {
+            "id": "electron.version",
+            "title": "Shared Electron runtime",
+            "description": "Version at /opt/electron used by the jobs app and claude-desktop. Electron 44 / Chromium 152's GPU process fails on the nouveau/NVK+zink stack until fallback exhaustion FATALs the app (SIGTRAP crashes of 2026-08-26).",
+            "group": "info",
+            "category": "apps",
+            "risk": "none",
+            "live": {
+                "type": "procfile",
+                "path": "/opt/electron/version",
+                "emptyAs": "not installed"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "verify": "/opt/electron/electron --version",
+            "rollback": "Reinstall a different version via the install-electron job.",
+            "default": "none",
+            "recommended": "latest stable on the nvidia driver"
+        },
+        {
+            "id": "gpu.kms-drivers",
+            "title": "KMS drivers per card",
+            "description": "Kernel driver behind each DRM card. card0 (RTX 3060) drives the GNOME session; Chromium renders via ANGLE\u2192zink\u2192NVK on top of it.",
+            "group": "info",
+            "category": "gpu",
+            "risk": "none",
+            "live": {
+                "type": "command",
+                "argv": [
+                    "sh",
+                    "-c",
+                    "for c in /sys/class/drm/card[0-9]; do echo \"$(basename $c): $(basename $(readlink $c/device/driver))\"; done | paste -sd ', '"
+                ]
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "verify": "ls -l /sys/class/drm/card*/device/driver",
+            "rollback": "n/a (informational)",
+            "default": "card0: nvidia-drm, card1: radeon",
+            "recommended": "nvidia-drm atomic on the display GPU"
+        },
+        {
+            "id": "apport.service",
+            "title": "apport crash capture",
+            "description": "Keeps /var/crash dumps flowing \u2014 the mechanism that let us extract the Electron FATAL. Leave active while diagnosing.",
+            "group": "safe",
+            "category": "diagnostics",
+            "risk": "low",
+            "live": {
+                "type": "command",
+                "argv": [
+                    "systemctl",
+                    "is-active",
+                    "apport"
+                ]
+            },
+            "persistent": {
+                "type": "command",
+                "argv": [
+                    "systemctl",
+                    "is-enabled",
+                    "apport"
+                ]
+            },
+            "verify": "systemctl status apport",
+            "rollback": "sudo systemctl enable --now apport",
+            "default": "active",
+            "recommended": "active while diagnosing crashes"
+        },
+        {
+            "id": "limits.nofile-hard",
+            "title": "Open-file limit (hard)",
+            "description": "Per-process fd hard limit for the session. Note: cockpit-bridge sessions report their own limits, which can differ from desktop/terminal sessions.",
+            "group": "info",
+            "category": "limits",
+            "risk": "none",
+            "live": {
+                "type": "command",
+                "argv": [
+                    "sh",
+                    "-c",
+                    "ulimit -Hn"
+                ]
+            },
+            "persistent": {
+                "type": "file-regex",
+                "path": "/etc/systemd/system.conf",
+                "regex": "^\\s*DefaultLimitNOFILE\\s*=\\s*(.+)$"
+            },
+            "verify": "ulimit -Hn",
+            "rollback": "Comment the line out in /etc/systemd/system.conf; reboot.",
+            "default": "1048576 (session hard)",
+            "recommended": "distro default"
+        },
+        {
+            "id": "kernel.tainted",
+            "title": "Kernel taint flags",
+            "description": "0 = untainted. Nonzero after loading out-of-tree modules (e.g. the NVIDIA driver sets taint bits) or kernel warnings/oopses \u2014 useful context when reading crash-era journals.",
+            "group": "info",
+            "category": "diagnostics",
+            "risk": "none",
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/kernel/tainted"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "verify": "cat /proc/sys/kernel/tainted",
+            "rollback": "n/a (informational)",
+            "default": "0 (4096 with nvidia loaded)",
+            "recommended": "4096 = expected out-of-tree bit only"
+        },
+        {
+            "id": "thp.defrag",
+            "title": "THP defrag mode",
+            "description": "How aggressively the kernel compacts memory for hugepages. 'always' can stall allocations; 'madvise' or 'defer+madvise' are the usual desktop settings.",
+            "group": "aggressive",
+            "category": "memory",
+            "risk": "medium",
+            "live": {
+                "type": "procfile-bracket",
+                "path": "/sys/kernel/mm/transparent_hugepage/defrag"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "verify": "cat /sys/kernel/mm/transparent_hugepage/defrag",
+            "rollback": "echo the previous mode back, or reboot.",
+            "default": "madvise",
+            "recommended": "madvise",
+            "choices": [
+                "always",
+                "defer",
+                "defer+madvise",
+                "madvise",
+                "never"
+            ],
+            "edit": {
+                "class": "sysfs"
+            }
+        },
+        {
+            "id": "vm.watermark_scale_factor",
+            "title": "vm.watermark_scale_factor",
+            "description": "Distance between kswapd wake-up watermarks (units of 0.01% of RAM). Raising it starts background reclaim earlier, smoothing pressure spikes at the cost of more background work.",
+            "group": "aggressive",
+            "category": "memory",
+            "risk": "medium",
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/vm/watermark_scale_factor"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "vm.watermark_scale_factor"
+            },
+            "verify": "sysctl vm.watermark_scale_factor",
+            "rollback": "sudo sysctl -w vm.watermark_scale_factor=10",
+            "default": "10",
+            "recommended": "10-125",
+            "range": {
+                "min": 10,
+                "max": 3000
+            },
+            "edit": {
+                "class": "sysctl"
+            }
+        },
+        {
+            "id": "tkg.config_hz",
+            "title": "Timer frequency (CONFIG_HZ)",
+            "description": "Kernel tick rate. Stock Ubuntu uses 1000Hz on recent releases; linux-tkg offers 500/750/1000. Build-time only.",
+            "group": "tkg",
+            "category": "kernel",
+            "risk": "none",
+            "live": {
+                "type": "command",
+                "argv": [
+                    "sh",
+                    "-c",
+                    "grep -m1 '^CONFIG_HZ=' /boot/config-$(uname -r) 2>/dev/null | cut -d= -f2"
+                ]
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "verify": "grep ^CONFIG_HZ= /boot/config-$(uname -r)",
+            "rollback": "n/a (kernel build option)",
+            "default": "1000",
+            "recommended": "1000"
+        },
+        {
+            "id": "kernel.panic",
+            "title": "kernel.panic (reboot-on-panic timeout)",
+            "description": "Seconds to wait after a kernel panic before rebooting. 0 loops forever until a manual power-cycle. With kernel.panic_on_oops=1 (this host), any oops panics immediately and then HANGS until reboot \u2014 a real availability gap for an unattended server. Kernel docs recommend a positive timeout (60 when a software watchdog is present).",
+            "group": "safe",
+            "category": "kernel",
+            "risk": "low",
+            "source": "https://docs.kernel.org/admin-guide/sysctl/kernel.html",
+            "default": "0",
+            "recommended": "60 (auto-reboot after a panic)",
+            "range": {
+                "min": 0,
+                "max": 3600
+            },
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/kernel/panic"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "kernel.panic"
+            },
+            "edit": {
+                "class": "sysctl"
+            },
+            "verify": "sysctl kernel.panic",
+            "rollback": "sudo sysctl -w kernel.panic=0 (or remove the sysctl.d entry)."
+        },
+        {
+            "id": "kernel.panic_on_oops",
+            "title": "kernel.panic_on_oops",
+            "description": "1 = a kernel oops immediately panics (safer: a corrupted kernel does not limp on). Pairs with kernel.panic: with panic=0 the machine then hangs, with panic=60 it reboots. Ubuntu default is 1.",
+            "group": "info",
+            "category": "kernel",
+            "risk": "none",
+            "source": "https://docs.kernel.org/admin-guide/sysctl/kernel.html",
+            "default": "1",
+            "recommended": "1 (keep; set kernel.panic>0 alongside)",
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/kernel/panic_on_oops"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "kernel.panic_on_oops"
+            },
+            "verify": "sysctl kernel.panic_on_oops",
+            "rollback": "n/a (informational)"
+        },
+        {
+            "id": "kernel.sysrq",
+            "title": "kernel.sysrq (magic SysRq bitmask)",
+            "description": "Which magic SysRq keys are enabled. 176 = 128+32+16 = sync + remount-read-only + reboot/poweroff, with process-kill (64), debug dumps (8) and keyboard/SAK (4) disabled. This is the Debian/Ubuntu default (/etc/sysctl.d/10-magic-sysrq.conf) \u2014 a sane middle ground; 1 enables everything, 0 disables all.",
+            "group": "info",
+            "category": "kernel",
+            "risk": "none",
+            "source": "https://docs.kernel.org/admin-guide/sysrq.html",
+            "default": "176 (Ubuntu)",
+            "recommended": "176 (keep) \u2014 438 or 1 only for kernel debugging",
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/kernel/sysrq"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "kernel.sysrq"
+            },
+            "verify": "sysctl kernel.sysrq",
+            "rollback": "n/a (informational)"
+        },
+        {
+            "id": "vm.vfs_cache_pressure",
+            "title": "vm.vfs_cache_pressure",
+            "description": "How hard the kernel reclaims dentry/inode caches vs page cache. 100 is balanced. 0 never reclaims them and can drive OOM; values well above 100 waste CPU searching for reclaimable slab. Keep at 100 unless a measured metadata-cache problem says otherwise.",
+            "group": "aggressive",
+            "category": "memory",
+            "risk": "medium",
+            "source": "https://docs.kernel.org/admin-guide/sysctl/vm.html",
+            "default": "100",
+            "recommended": "100 (keep; do not set to 0)",
+            "range": {
+                "min": 1,
+                "max": 1000
+            },
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/vm/vfs_cache_pressure"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "vm.vfs_cache_pressure"
+            },
+            "edit": {
+                "class": "sysctl"
+            },
+            "verify": "sysctl vm.vfs_cache_pressure",
+            "rollback": "sudo sysctl -w vm.vfs_cache_pressure=100."
+        },
+        {
+            "id": "vm.page-cluster",
+            "title": "vm.page-cluster",
+            "description": "Swap read-ahead as a power of two (3 = 8 pages per fault). Default 3. 0 is commonly advised for zram/SSD swap (lower fault latency); higher values prefetch more. Recent kernels bypass read-ahead on synchronous-IO swap devices anyway.",
+            "group": "aggressive",
+            "category": "memory",
+            "risk": "low",
+            "source": "https://docs.kernel.org/admin-guide/sysctl/vm.html",
+            "default": "3",
+            "recommended": "3 (disk swap) / 0 (zram or SSD swap)",
+            "range": {
+                "min": 0,
+                "max": 8
+            },
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/vm/page-cluster"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "vm.page-cluster"
+            },
+            "edit": {
+                "class": "sysctl"
+            },
+            "verify": "sysctl vm.page-cluster",
+            "rollback": "sudo sysctl -w vm.page-cluster=3."
+        },
+        {
+            "id": "vm.compaction_proactiveness",
+            "title": "vm.compaction_proactiveness",
+            "description": "How aggressively the kernel proactively compacts memory for hugepages, 0\u2013100 (default 20). Extremes like 100 cause excessive background compaction and, because it migrates other processes' pages, latency spikes \u2014 relevant with latency-sensitive VMs on this host.",
+            "group": "aggressive",
+            "category": "memory",
+            "risk": "medium",
+            "source": "https://docs.kernel.org/admin-guide/sysctl/vm.html",
+            "default": "20",
+            "recommended": "20 (keep; avoid extremes)",
+            "range": {
+                "min": 0,
+                "max": 100
+            },
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/vm/compaction_proactiveness"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "vm.compaction_proactiveness"
+            },
+            "edit": {
+                "class": "sysctl"
+            },
+            "verify": "sysctl vm.compaction_proactiveness",
+            "rollback": "sudo sysctl -w vm.compaction_proactiveness=20."
+        },
+        {
+            "id": "vm.zone_reclaim_mode",
+            "title": "vm.zone_reclaim_mode",
+            "description": "Whether the kernel reclaims within a NUMA node before spilling to others. Default 0 (off). Kernel docs explicitly recommend keeping it disabled for file-server and cache-heavy workloads \u2014 the page-cache benefit beats NUMA locality here.",
+            "group": "info",
+            "category": "memory",
+            "risk": "low",
+            "source": "https://docs.kernel.org/admin-guide/sysctl/vm.html",
+            "default": "0",
+            "recommended": "0 (keep)",
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/vm/zone_reclaim_mode"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "vm.zone_reclaim_mode"
+            },
+            "verify": "sysctl vm.zone_reclaim_mode",
+            "rollback": "n/a (keep at 0)"
+        },
+        {
+            "id": "fs.protected_regular",
+            "title": "fs.protected_regular",
+            "description": "Blocks O_CREAT opens of regular files you don't own in sticky world-writable (1) or also group-writable (2) dirs \u2014 a /tmp symlink/hardlink-class hardening. Ubuntu default 2. Lowering it re-opens a class of local privilege bugs.",
+            "group": "safe",
+            "category": "diagnostics",
+            "risk": "low",
+            "source": "https://docs.kernel.org/admin-guide/sysctl/fs.html",
+            "default": "2",
+            "recommended": "2 (keep)",
+            "choices": [
+                "0",
+                "1",
+                "2"
+            ],
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/fs/protected_regular"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "fs.protected_regular"
+            },
+            "verify": "sysctl fs.protected_regular",
+            "rollback": "n/a (keep at 2)"
+        },
+        {
+            "id": "fs.protected_fifos",
+            "title": "fs.protected_fifos",
+            "description": "Same hardening as fs.protected_regular but for FIFOs. Ubuntu default 1 (world-writable sticky dirs).",
+            "group": "safe",
+            "category": "diagnostics",
+            "risk": "low",
+            "source": "https://docs.kernel.org/admin-guide/sysctl/fs.html",
+            "default": "1",
+            "recommended": "1 (keep)",
+            "choices": [
+                "0",
+                "1",
+                "2"
+            ],
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/fs/protected_fifos"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "fs.protected_fifos"
+            },
+            "verify": "sysctl fs.protected_fifos",
+            "rollback": "n/a (keep at 1)"
+        },
+        {
+            "id": "net.core.somaxconn",
+            "title": "net.core.somaxconn",
+            "description": "Max length of the accept() backlog a listening socket can request. Kernel default is 4096 since Linux 5.4 (was 128), so this host is at the default. Per-netns, so containers get their own. Adequate for this workload.",
+            "group": "info",
+            "category": "network",
+            "risk": "low",
+            "source": "https://docs.kernel.org/admin-guide/sysctl/net.html",
+            "default": "4096",
+            "recommended": "4096 (default; raise only for very high connection rates)",
+            "range": {
+                "min": 128,
+                "max": 65535
+            },
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/net/core/somaxconn"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "net.core.somaxconn"
+            },
+            "edit": {
+                "class": "sysctl"
+            },
+            "verify": "sysctl net.core.somaxconn",
+            "rollback": "sudo sysctl -w net.core.somaxconn=4096."
+        },
+        {
+            "id": "disk.nvme0n1.scheduler",
+            "title": "nvme0n1 I/O scheduler",
+            "description": "Block I/O scheduler for nvme0n1 (ssd). 'none' suits fast NVMe (the device reorders internally); mq-deadline adds fairness for SATA; bfq favors desktop interactivity on slower disks.",
+            "group": "aggressive",
+            "category": "device - disk - nvme0n1",
+            "risk": "medium",
+            "generated": true,
+            "source": "https://docs.redhat.com (RHEL 9 disk-scheduler guide) / kernel block docs",
+            "default": "none",
+            "recommended": "none \u2014 kernel default for multi-queue NVMe and Red Hat's explicit recommendation; leave it",
+            "choices": [
+                "none",
+                "mq-deadline"
+            ],
+            "live": {
+                "type": "procfile-bracket",
+                "path": "/sys/block/nvme0n1/queue/scheduler"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "edit": {
+                "class": "sysfs"
+            },
+            "verify": "cat /sys/block/nvme0n1/queue/scheduler",
+            "rollback": "Echo the previous scheduler back; runtime-only, reboot restores the kernel default."
+        },
+        {
+            "id": "disk.nvme0n1.read_ahead_kb",
+            "title": "nvme0n1 read-ahead (KB)",
+            "description": "Kernel readahead window for nvme0n1. Larger helps sequential reads; smaller reduces wasted I/O for random workloads.",
+            "group": "aggressive",
+            "category": "device - disk - nvme0n1",
+            "risk": "low",
+            "generated": true,
+            "source": "Linux mm: VM_READAHEAD_PAGES (SZ_128K), include/linux/mm.h",
+            "default": "128",
+            "recommended": "128 (kernel mm default, not per-device-tuned) \u2013 raise to 256\u2013512 only for sequential-heavy use",
+            "range": {
+                "min": 0,
+                "max": 16384
+            },
+            "live": {
+                "type": "procfile",
+                "path": "/sys/block/nvme0n1/queue/read_ahead_kb"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "edit": {
+                "class": "sysfs"
+            },
+            "verify": "cat /sys/block/nvme0n1/queue/read_ahead_kb",
+            "rollback": "Echo the previous value back; runtime-only."
+        },
+        {
+            "id": "disk.nvme0n1.nr_requests",
+            "title": "nvme0n1 queue depth (nr_requests)",
+            "description": "Requests the block layer queues for nvme0n1 before throttling submitters.",
+            "group": "info",
+            "category": "device - disk - nvme0n1",
+            "risk": "low",
+            "generated": true,
+            "default": "1023",
+            "recommended": "device default",
+            "live": {
+                "type": "procfile",
+                "path": "/sys/block/nvme0n1/queue/nr_requests"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "verify": "cat /sys/block/nvme0n1/queue/nr_requests",
+            "rollback": "n/a (informational)"
+        },
+        {
+            "id": "disk.nvme1n1.scheduler",
+            "title": "nvme1n1 I/O scheduler",
+            "description": "Block I/O scheduler for nvme1n1 (ssd). 'none' suits fast NVMe (the device reorders internally); mq-deadline adds fairness for SATA; bfq favors desktop interactivity on slower disks.",
+            "group": "aggressive",
+            "category": "device - disk - nvme1n1",
+            "risk": "medium",
+            "generated": true,
+            "source": "https://docs.redhat.com (RHEL 9 disk-scheduler guide) / kernel block docs",
+            "default": "none",
+            "recommended": "none \u2014 kernel default for multi-queue NVMe and Red Hat's explicit recommendation; leave it",
+            "choices": [
+                "none",
+                "mq-deadline"
+            ],
+            "live": {
+                "type": "procfile-bracket",
+                "path": "/sys/block/nvme1n1/queue/scheduler"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "edit": {
+                "class": "sysfs"
+            },
+            "verify": "cat /sys/block/nvme1n1/queue/scheduler",
+            "rollback": "Echo the previous scheduler back; runtime-only, reboot restores the kernel default."
+        },
+        {
+            "id": "disk.nvme1n1.read_ahead_kb",
+            "title": "nvme1n1 read-ahead (KB)",
+            "description": "Kernel readahead window for nvme1n1. Larger helps sequential reads; smaller reduces wasted I/O for random workloads.",
+            "group": "aggressive",
+            "category": "device - disk - nvme1n1",
+            "risk": "low",
+            "generated": true,
+            "source": "Linux mm: VM_READAHEAD_PAGES (SZ_128K), include/linux/mm.h",
+            "default": "128",
+            "recommended": "128 (kernel mm default, not per-device-tuned) \u2013 raise to 256\u2013512 only for sequential-heavy use",
+            "range": {
+                "min": 0,
+                "max": 16384
+            },
+            "live": {
+                "type": "procfile",
+                "path": "/sys/block/nvme1n1/queue/read_ahead_kb"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "edit": {
+                "class": "sysfs"
+            },
+            "verify": "cat /sys/block/nvme1n1/queue/read_ahead_kb",
+            "rollback": "Echo the previous value back; runtime-only."
+        },
+        {
+            "id": "disk.nvme1n1.nr_requests",
+            "title": "nvme1n1 queue depth (nr_requests)",
+            "description": "Requests the block layer queues for nvme1n1 before throttling submitters.",
+            "group": "info",
+            "category": "device - disk - nvme1n1",
+            "risk": "low",
+            "generated": true,
+            "default": "1023",
+            "recommended": "device default",
+            "live": {
+                "type": "procfile",
+                "path": "/sys/block/nvme1n1/queue/nr_requests"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "verify": "cat /sys/block/nvme1n1/queue/nr_requests",
+            "rollback": "n/a (informational)"
+        },
+        {
+            "id": "disk.sda.scheduler",
+            "title": "sda I/O scheduler",
+            "description": "Block I/O scheduler for sda (ssd). 'none' suits fast NVMe (the device reorders internally); mq-deadline adds fairness for SATA; bfq favors desktop interactivity on slower disks.",
+            "group": "aggressive",
+            "category": "device - disk - sda",
+            "risk": "medium",
+            "generated": true,
+            "source": "https://docs.redhat.com (RHEL 9 disk-scheduler guide) / kernel block docs",
+            "default": "mq-deadline",
+            "recommended": "mq-deadline (Ubuntu/kernel default for single-queue; bfq for desktop latency, none/kyber for max IOPS \u2014 contested)",
+            "choices": [
+                "none",
+                "mq-deadline"
+            ],
+            "live": {
+                "type": "procfile-bracket",
+                "path": "/sys/block/sda/queue/scheduler"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "edit": {
+                "class": "sysfs"
+            },
+            "verify": "cat /sys/block/sda/queue/scheduler",
+            "rollback": "Echo the previous scheduler back; runtime-only, reboot restores the kernel default."
+        },
+        {
+            "id": "disk.sda.read_ahead_kb",
+            "title": "sda read-ahead (KB)",
+            "description": "Kernel readahead window for sda. Larger helps sequential reads; smaller reduces wasted I/O for random workloads.",
+            "group": "aggressive",
+            "category": "device - disk - sda",
+            "risk": "low",
+            "generated": true,
+            "source": "Linux mm: VM_READAHEAD_PAGES (SZ_128K), include/linux/mm.h",
+            "default": "128",
+            "recommended": "128 (kernel mm default, not per-device-tuned) \u2013 raise to 256\u2013512 only for sequential-heavy use",
+            "range": {
+                "min": 0,
+                "max": 16384
+            },
+            "live": {
+                "type": "procfile",
+                "path": "/sys/block/sda/queue/read_ahead_kb"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "edit": {
+                "class": "sysfs"
+            },
+            "verify": "cat /sys/block/sda/queue/read_ahead_kb",
+            "rollback": "Echo the previous value back; runtime-only."
+        },
+        {
+            "id": "disk.sda.nr_requests",
+            "title": "sda queue depth (nr_requests)",
+            "description": "Requests the block layer queues for sda before throttling submitters.",
+            "group": "info",
+            "category": "device - disk - sda",
+            "risk": "low",
+            "generated": true,
+            "default": "64",
+            "recommended": "device default",
+            "live": {
+                "type": "procfile",
+                "path": "/sys/block/sda/queue/nr_requests"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "verify": "cat /sys/block/sda/queue/nr_requests",
+            "rollback": "n/a (informational)"
+        },
+        {
+            "id": "disk.sdb.scheduler",
+            "title": "sdb I/O scheduler",
+            "description": "Block I/O scheduler for sdb (ssd). 'none' suits fast NVMe (the device reorders internally); mq-deadline adds fairness for SATA; bfq favors desktop interactivity on slower disks.",
+            "group": "aggressive",
+            "category": "device - disk - sdb",
+            "risk": "medium",
+            "generated": true,
+            "source": "https://docs.redhat.com (RHEL 9 disk-scheduler guide) / kernel block docs",
+            "default": "mq-deadline",
+            "recommended": "mq-deadline (Ubuntu/kernel default for single-queue; bfq for desktop latency, none/kyber for max IOPS \u2014 contested)",
+            "choices": [
+                "none",
+                "mq-deadline"
+            ],
+            "live": {
+                "type": "procfile-bracket",
+                "path": "/sys/block/sdb/queue/scheduler"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "edit": {
+                "class": "sysfs"
+            },
+            "verify": "cat /sys/block/sdb/queue/scheduler",
+            "rollback": "Echo the previous scheduler back; runtime-only, reboot restores the kernel default."
+        },
+        {
+            "id": "disk.sdb.read_ahead_kb",
+            "title": "sdb read-ahead (KB)",
+            "description": "Kernel readahead window for sdb. Larger helps sequential reads; smaller reduces wasted I/O for random workloads.",
+            "group": "aggressive",
+            "category": "device - disk - sdb",
+            "risk": "low",
+            "generated": true,
+            "source": "Linux mm: VM_READAHEAD_PAGES (SZ_128K), include/linux/mm.h",
+            "default": "128",
+            "recommended": "128 (kernel mm default, not per-device-tuned) \u2013 raise to 256\u2013512 only for sequential-heavy use",
+            "range": {
+                "min": 0,
+                "max": 16384
+            },
+            "live": {
+                "type": "procfile",
+                "path": "/sys/block/sdb/queue/read_ahead_kb"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "edit": {
+                "class": "sysfs"
+            },
+            "verify": "cat /sys/block/sdb/queue/read_ahead_kb",
+            "rollback": "Echo the previous value back; runtime-only."
+        },
+        {
+            "id": "disk.sdb.nr_requests",
+            "title": "sdb queue depth (nr_requests)",
+            "description": "Requests the block layer queues for sdb before throttling submitters.",
+            "group": "info",
+            "category": "device - disk - sdb",
+            "risk": "low",
+            "generated": true,
+            "default": "64",
+            "recommended": "device default",
+            "live": {
+                "type": "procfile",
+                "path": "/sys/block/sdb/queue/nr_requests"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "verify": "cat /sys/block/sdb/queue/nr_requests",
+            "rollback": "n/a (informational)"
+        },
+        {
+            "id": "disk.sdc.scheduler",
+            "title": "sdc I/O scheduler",
+            "description": "Block I/O scheduler for sdc (ssd). 'none' suits fast NVMe (the device reorders internally); mq-deadline adds fairness for SATA; bfq favors desktop interactivity on slower disks.",
+            "group": "aggressive",
+            "category": "device - disk - sdc",
+            "risk": "medium",
+            "generated": true,
+            "source": "https://docs.redhat.com (RHEL 9 disk-scheduler guide) / kernel block docs",
+            "default": "mq-deadline",
+            "recommended": "mq-deadline (Ubuntu/kernel default for single-queue; bfq for desktop latency, none/kyber for max IOPS \u2014 contested)",
+            "choices": [
+                "none",
+                "mq-deadline"
+            ],
+            "live": {
+                "type": "procfile-bracket",
+                "path": "/sys/block/sdc/queue/scheduler"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "edit": {
+                "class": "sysfs"
+            },
+            "verify": "cat /sys/block/sdc/queue/scheduler",
+            "rollback": "Echo the previous scheduler back; runtime-only, reboot restores the kernel default."
+        },
+        {
+            "id": "disk.sdc.read_ahead_kb",
+            "title": "sdc read-ahead (KB)",
+            "description": "Kernel readahead window for sdc. Larger helps sequential reads; smaller reduces wasted I/O for random workloads.",
+            "group": "aggressive",
+            "category": "device - disk - sdc",
+            "risk": "low",
+            "generated": true,
+            "source": "Linux mm: VM_READAHEAD_PAGES (SZ_128K), include/linux/mm.h",
+            "default": "128",
+            "recommended": "128 (kernel mm default, not per-device-tuned) \u2013 raise to 256\u2013512 only for sequential-heavy use",
+            "range": {
+                "min": 0,
+                "max": 16384
+            },
+            "live": {
+                "type": "procfile",
+                "path": "/sys/block/sdc/queue/read_ahead_kb"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "edit": {
+                "class": "sysfs"
+            },
+            "verify": "cat /sys/block/sdc/queue/read_ahead_kb",
+            "rollback": "Echo the previous value back; runtime-only."
+        },
+        {
+            "id": "disk.sdc.nr_requests",
+            "title": "sdc queue depth (nr_requests)",
+            "description": "Requests the block layer queues for sdc before throttling submitters.",
+            "group": "info",
+            "category": "device - disk - sdc",
+            "risk": "low",
+            "generated": true,
+            "default": "64",
+            "recommended": "device default",
+            "live": {
+                "type": "procfile",
+                "path": "/sys/block/sdc/queue/nr_requests"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "verify": "cat /sys/block/sdc/queue/nr_requests",
+            "rollback": "n/a (informational)"
+        },
+        {
+            "id": "cpu.scaling_governor",
+            "title": "CPU scaling governor",
+            "description": "Frequency scaling policy (driver: amd-pstate-epp). With amd-pstate-epp, 'powersave' plus the energy-performance preference is the intended pairing; 'performance' pins the EPP to maximum.",
+            "group": "aggressive",
+            "category": "device - cpu - cpufreq",
+            "risk": "medium",
+            "generated": true,
+            "default": "powersave",
+            "recommended": "powersave (amd-pstate-epp) \u2014 see EPP below",
+            "choices": [
+                "performance",
+                "powersave"
+            ],
+            "live": {
+                "type": "procfile",
+                "path": "/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "edit": {
+                "class": "sysfs"
+            },
+            "verify": "cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor",
+            "rollback": "Echo the previous governor back; runtime-only (cpu0 shown; tools like cpupower set all cores)."
+        },
+        {
+            "id": "cpu.energy_performance_preference",
+            "title": "CPU energy/performance preference (EPP)",
+            "description": "amd-pstate-epp hint balancing power draw against responsiveness for the whole package (cpu0 shown).",
+            "group": "aggressive",
+            "category": "device - cpu - cpufreq",
+            "risk": "low",
+            "generated": true,
+            "source": "kernel amd-pstate admin-guide",
+            "default": "balance_performance",
+            "recommended": "balance_performance (desktop). Note: on Zen2 (3960X) amd-pstate uses the slower shared-memory CPPC path \u2014 the firmware, not the governor, picks frequency from min/max + this EPP hint; effect is real but less studied than on MSR-based Zen3+",
+            "choices": [
+                "default",
+                "performance",
+                "balance_performance",
+                "balance_power",
+                "power"
+            ],
+            "live": {
+                "type": "procfile",
+                "path": "/sys/devices/system/cpu/cpu0/cpufreq/energy_performance_preference"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "edit": {
+                "class": "sysfs"
+            },
+            "verify": "cat /sys/devices/system/cpu/cpu0/cpufreq/energy_performance_preference",
+            "rollback": "Echo the previous preference back; runtime-only."
+        },
+        {
+            "id": "cpu.boost",
+            "title": "CPU frequency boost",
+            "description": "Whether cores may exceed base clocks. Disabling trades peak performance for lower heat and steadier clocks.",
+            "group": "aggressive",
+            "category": "device - cpu - cpufreq",
+            "risk": "low",
+            "generated": true,
+            "default": "0",
+            "recommended": "1 (enabled)",
+            "choices": [
+                "0",
+                "1"
+            ],
+            "live": {
+                "type": "procfile",
+                "path": "/sys/devices/system/cpu/cpu0/cpufreq/boost"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "edit": {
+                "class": "sysfs"
+            },
+            "verify": "cat /sys/devices/system/cpu/cpu0/cpufreq/boost",
+            "rollback": "echo 1 back; runtime-only."
+        },
+        {
+            "id": "net.enp67s0.mtu",
+            "title": "enp67s0 MTU",
+            "description": "Maximum transmission unit for physical NIC enp67s0. 1500 is standard Ethernet; jumbo frames need every hop to agree.",
+            "group": "aggressive",
+            "category": "device - net - enp67s0",
+            "risk": "medium",
+            "generated": true,
+            "default": "1500",
+            "recommended": "1500 unless the whole path is jumbo-clean",
+            "range": {
+                "min": 576,
+                "max": 9216
+            },
+            "live": {
+                "type": "procfile",
+                "path": "/sys/class/net/enp67s0/mtu"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "edit": {
+                "class": "sysfs"
+            },
+            "verify": "cat /sys/class/net/enp67s0/mtu",
+            "rollback": "Echo 1500 back (or reapply the NetworkManager profile)."
+        },
+        {
+            "id": "net.enp67s0.speed",
+            "title": "enp67s0 link speed",
+            "description": "Negotiated link speed (Mb/s) for enp67s0.",
+            "group": "info",
+            "category": "device - net - enp67s0",
+            "risk": "none",
+            "generated": true,
+            "default": "\u2014",
+            "recommended": "highest the link negotiates",
+            "live": {
+                "type": "procfile",
+                "path": "/sys/class/net/enp67s0/speed"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "verify": "cat /sys/class/net/enp67s0/speed",
+            "rollback": "n/a (informational)"
+        }
+    ]
+}
