@@ -1,0 +1,41 @@
+# cockpit-tuner .envdefault
+#
+# deploy.sh seeds this to [install path]/.env, MISSING-ONLY: an existing .env is
+# never overwritten, because it is what the operator decided. When a new version
+# adds a key, deploy.sh says so and install.sh refuses until you add it.
+#
+# GRAMMAR (docs/DEPLOY-CONTRACT.md section 4.1) - a strict subset of what sh,
+# systemd's EnvironmentFile and Python all accept, so one file feeds all three:
+#   KEY=value | KEY="value with spaces" | KEY=
+#   Keys match ^[A-Z][A-Z0-9_]*$. No `export`. Full-line comments only - a
+#   trailing # is part of the value. NO $, no ${...}, no $(...), no backticks:
+#   there is no interpolation, so write the value out in full or let the
+#   consumer join the two halves.
+#
+# LOCATIONS AND SETTINGS ONLY. Never a secret. This file is 0644 so that a
+# user-class consumer can read its own configuration without escalating; a
+# deploy that finds a credential-shaped value in here refuses to write it.
+#
+# A .env in the SOURCE checkout is TEST-ONLY - it exists so the test suite and a
+# dev install have something to read, it is in .gitignore, and no deployed
+# plugin ever reads one. See section 4.3.
+
+# Where per-user snapshot history is written. bin/tuner-snapshot.py reads this
+# key; the browser page derives the same location itself, because a page cannot
+# read a file on the host.
+#
+# A leading ~ is expanded by the consumer against the invoking user's home. Keep
+# it per-user: snapshots are one operator's view of one machine, the timer is a
+# systemd USER timer, and root has no business reaching into somebody's home.
+# If this is wrong the timer writes to a directory nobody looks at, and the
+# history panel in the page stays empty forever.
+TUNER_HISTORY_DIR=~/.local/share/cockpit-tuner/history
+
+# The root-owned undo journal's directory. Every setting the page applies is
+# appended to <this>/undo.jsonl with the value it had before, which is the only
+# record of what was done to this machine - so it lives in /var/lib, outside the
+# payload, and survives both an upgrade and an uninstall.
+#
+# install.sh creates it 0755 root:root. If this is wrong, the first applied edit
+# creates it wherever this points and the Undo panel silently loses its history.
+TUNER_UNDO_DIR=/var/lib/cockpit-tuner

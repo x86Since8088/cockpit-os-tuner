@@ -2,3 +2,6 @@ __pycache__/
 *.pyc
 node_modules/
 test-results/
+
+# Test-only. A deployed plugin reads [install path]/.env, never this one.
+.env
