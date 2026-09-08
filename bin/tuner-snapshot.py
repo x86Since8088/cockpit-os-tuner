@@ -18,8 +18,102 @@ import sys
 from datetime import datetime, timezone
 
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
+
+# CODE AND DATA THAT SHIPPED WITH THIS SCRIPT resolve relative to the script.
+# schemas.json is part of the payload; it must match the payload this file came
+# from, so an upgrade can never pair a new collector with an old schema. This is
+# the OPPOSITE rule from configuration below, and the two are different on
+# purpose: code must match the payload, config must match the HOST
+# (docs/DEPLOY-CONTRACT.md section 4.3, JC-9).
 SCHEMAS = os.path.join(SCRIPT_DIR, "..", "schemas.json")
-HISTORY = os.path.expanduser("~/.local/share/cockpit-tuner/history")
+
+DEFAULT_INSTALL_CONF = "/etc/cockpit-tuner/install.conf"
+
+
+def load_env(path):
+    """The section 4.1 grammar, and nothing wider.
+
+    KEY=value, optional whole-value double quotes, full-line comments only, no
+    export, and NO interpolation. A `$` or a backtick in a value is a refusal
+    rather than an expansion: a shell would expand it, this parser will not, and
+    the day somebody teaches it to is the day command substitution becomes a
+    code-execution primitive in a config file.
+    """
+    out = {}
+    with open(path, encoding="utf-8") as fh:
+        for n, raw in enumerate(fh, 1):
+            line = raw.strip()
+            if not line or line.startswith("#"):
+                continue
+            if "=" not in line:
+                raise ValueError("%s:%d: not KEY=VALUE" % (path, n))
+            k, v = line.split("=", 1)
+            k, v = k.strip(), v.strip()
+            if not re.fullmatch(r"[A-Z][A-Z0-9_]*", k):
+                raise ValueError("%s:%d: bad key %r" % (path, n, k))
+            if len(v) >= 2 and v[0] == v[-1] == '"':
+                v = v[1:-1]
+            if any(c in v for c in "$`"):
+                raise ValueError("%s:%d: %s contains $ or ` - interpolation is not "
+                                 "supported (DEPLOY-CONTRACT section 4.1)" % (path, n, k))
+            if k in out:
+                sys.stderr.write("%s:%d: warning: %s set twice; last wins\n" % (path, n, k))
+            out[k] = v
+    return out
+
+
+def _owned_by_me(path):
+    try:
+        return os.stat(path).st_uid == os.getuid()
+    except OSError:
+        return False
+
+
+def env_file():
+    """Where this script's configuration lives. Three steps, and no fourth.
+
+    There is deliberately NO "look beside me" step. This file's realpath lands
+    in the payload, and a .env beside the payload would be the right answer on a
+    deployed host - which is exactly why it must not be implemented, because the
+    same line in a dev install lands in the checkout and reads a TEST-ONLY .env.
+    The indirection through install.conf is what makes dev-versus-deployed a
+    fact recorded at install time instead of a coincidence of where a file sits.
+    """
+    # 1. The test seam. Non-root only, and only a file the caller owns: an
+    #    environment variable that redirects a privileged process's
+    #    configuration is an escalation, whether or not the file holds secrets.
+    override = os.environ.get("TUNER_ENV")
+    if override:
+        if os.geteuid() == 0:
+            sys.stderr.write("tuner-snapshot: ignoring TUNER_ENV (running as root)\n")
+        elif not _owned_by_me(override):
+            sys.stderr.write("tuner-snapshot: ignoring TUNER_ENV (not owned by uid %d)\n"
+                             % os.getuid())
+        else:
+            return override
+
+    # 2. install.conf. The normal path, and the only one on a production host.
+    conf = DEFAULT_INSTALL_CONF
+    from_env = os.environ.get("TUNER_INSTALL_CONF")
+    if from_env and os.geteuid() != 0:
+        conf = from_env
+    if os.path.isfile(conf):
+        got = load_env(conf).get("ENV_FILE")
+        if got:
+            return got
+
+    # 3. Nothing. Fail loudly, and name the file.
+    sys.exit("tuner-snapshot: no configuration. %s does not exist or does not set\n"
+             "  ENV_FILE=. Run install.sh, which writes it. For a dev run, point\n"
+             "  TUNER_ENV at a .env you own." % conf)
+
+
+def history_dir():
+    env = load_env(env_file())
+    d = env.get("TUNER_HISTORY_DIR")
+    if not d:
+        sys.exit("tuner-snapshot: %s does not set TUNER_HISTORY_DIR." % env_file())
+    return os.path.expanduser(d)
 
 SYSCTL_SOURCES = ["/etc/sysctl.conf", "/etc/sysctl.d/*.conf",
                   "/run/sysctl.d/*.conf", "/usr/lib/sysctl.d/*.conf"]
@@ -120,7 +214,7 @@ def resolve_persistent(setting, sysctl_map):
 
 
 def latest_snapshot():
-    files = glob.glob(os.path.join(HISTORY, "snapshot-*.json"))
+    files = glob.glob(os.path.join(history_dir(), "snapshot-*.json"))
     if not files:
         return None
     newest = max(files, key=os.path.getmtime)
@@ -148,13 +242,14 @@ def main():
         print("unchanged since %s — no snapshot written" % prev.get("name"))
         return 0
 
-    os.makedirs(HISTORY, exist_ok=True)
+    history = history_dir()
+    os.makedirs(history, exist_ok=True)
     # UTC, matching the plugin's toISOString()-derived names so files interleave
     stamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
     name = "snapshot-" + stamp.replace(":", "-").replace("+00-00", "") + ".json"
     data = {"name": name, "timestamp": stamp, "source": "timer",
             "values": values}
-    path = os.path.join(HISTORY, name)
+    path = os.path.join(history, name)
     with open(path, "w") as f:
         json.dump(data, f, indent=2)
     changed = "initial snapshot" if not prev else "%d value(s) changed" % sum(

@@ -1,7 +1,23 @@
+# TEMPLATE. install.sh substitutes the at-sign-delimited tokens below at
+# install time; any token it does not recognise SURVIVES, and a survivor is a
+# refusal rather than a warning (docs/DEPLOY-CONTRACT.md section 6.2). That is
+# why this file uses tokens instead of a literal path: sed against a literal
+# succeeds vacuously the moment somebody edits the unit, and installs a
+# working-looking service that names a directory nothing lives in.
+#
+# Do not edit the installed copy - edit this template and re-run install.sh.
 [Unit]
-Description=cockpit-tuner settings snapshot (kept only if changed)
+Description=cockpit-tuner settings snapshot (written only when something changed)
+Documentation=file://@PAYLOAD@/README.md
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/python3 @SNAPSHOT@
+# The interpreter and the script are both absolute, and install.sh checks that
+# every absolute path on this line exists before it will place the unit.
+ExecStart=/usr/bin/python3 @PAYLOAD@/bin/tuner-snapshot.py
+# How the script finds its configuration: install.conf names ENV_FILE, and
+# ENV_FILE names the history directory. It is passed here rather than guessed,
+# because a per-user install records its install.conf under the user's own
+# ~/.config and a system install records it under /etc.
+Environment=TUNER_INSTALL_CONF=@INSTALL_CONF@
 Nice=10
