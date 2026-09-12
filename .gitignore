@@ -5,3 +5,7 @@ test-results/
 
 # Test-only. A deployed plugin reads [install path]/.env, never this one.
 .env
+
+# Playwright test run outputs
+test/.artifacts/
+test/.last-run.json
