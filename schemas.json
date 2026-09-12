@@ -994,6 +994,442 @@
             "rollback": "sudo sysctl -w net.core.somaxconn=4096."
         },
         {
+            "id": "vm.dirty_ratio",
+            "title": "vm.dirty_ratio",
+            "description": "Percent of available (free+reclaimable) memory of dirty pages at which a writing process is itself throttled until writeback catches up. On a 128GB box the percentage implies a large pool; for absolute control use vm.dirty_bytes instead (setting one zeroes the other).",
+            "group": "aggressive",
+            "category": "memory",
+            "risk": "medium",
+            "source": "https://docs.kernel.org/admin-guide/sysctl/vm.html",
+            "default": "20",
+            "recommended": "20 (keep; use vm.dirty_bytes for an absolute cap on large-RAM hosts)",
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/vm/dirty_ratio"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "vm.dirty_ratio"
+            },
+            "verify": "sysctl vm.dirty_ratio",
+            "rollback": "sudo sysctl -w vm.dirty_ratio=20 (or remove the sysctl.d entry).",
+            "range": {
+                "min": 1,
+                "max": 90
+            },
+            "edit": {
+                "class": "sysctl"
+            }
+        },
+        {
+            "id": "vm.dirty_background_ratio",
+            "title": "vm.dirty_background_ratio",
+            "description": "Percent of available memory of dirty pages at which background flusher threads begin writing. Red Hat's virtual-host tuned profile lowers this for earlier, gentler writeback on KVM hosts.",
+            "group": "aggressive",
+            "category": "memory",
+            "risk": "medium",
+            "source": "https://docs.kernel.org/admin-guide/sysctl/vm.html",
+            "default": "10",
+            "recommended": "10 (keep; lower \u2014 e.g. 5 \u2014 for earlier writeback on a KVM host)",
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/vm/dirty_background_ratio"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "vm.dirty_background_ratio"
+            },
+            "verify": "sysctl vm.dirty_background_ratio",
+            "rollback": "sudo sysctl -w vm.dirty_background_ratio=10 (or remove the sysctl.d entry).",
+            "range": {
+                "min": 1,
+                "max": 90
+            },
+            "edit": {
+                "class": "sysctl"
+            }
+        },
+        {
+            "id": "vm.dirty_expire_centisecs",
+            "title": "vm.dirty_expire_centisecs",
+            "description": "Age (hundredths of a second) at which dirty data becomes old enough to be written out on the next flusher run. Default 3000 (30s).",
+            "group": "aggressive",
+            "category": "memory",
+            "risk": "low",
+            "source": "https://docs.kernel.org/admin-guide/sysctl/vm.html",
+            "default": "3000",
+            "recommended": "3000 (keep)",
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/vm/dirty_expire_centisecs"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "vm.dirty_expire_centisecs"
+            },
+            "verify": "sysctl vm.dirty_expire_centisecs",
+            "rollback": "sudo sysctl -w vm.dirty_expire_centisecs=3000 (or remove the sysctl.d entry).",
+            "range": {
+                "min": 100,
+                "max": 360000
+            },
+            "edit": {
+                "class": "sysctl"
+            }
+        },
+        {
+            "id": "vm.dirty_writeback_centisecs",
+            "title": "vm.dirty_writeback_centisecs",
+            "description": "How often (hundredths of a second) the flusher threads wake to write dirty data. Default 500 (5s); 0 disables periodic writeback entirely.",
+            "group": "aggressive",
+            "category": "memory",
+            "risk": "low",
+            "source": "https://docs.kernel.org/admin-guide/sysctl/vm.html",
+            "default": "500",
+            "recommended": "500 (keep)",
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/vm/dirty_writeback_centisecs"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "vm.dirty_writeback_centisecs"
+            },
+            "verify": "sysctl vm.dirty_writeback_centisecs",
+            "rollback": "sudo sysctl -w vm.dirty_writeback_centisecs=500 (or remove the sysctl.d entry).",
+            "range": {
+                "min": 0,
+                "max": 360000
+            },
+            "edit": {
+                "class": "sysctl"
+            }
+        },
+        {
+            "id": "kernel.split_lock_mitigate",
+            "title": "kernel.split_lock_mitigate",
+            "description": "1 penalizes processes that issue split locks (unaligned atomics crossing cache lines) so one workload cannot degrade the whole bus \u2014 noisy-neighbor DoS protection. Trades a little throughput for isolation on a shared VM/container host.",
+            "group": "aggressive",
+            "category": "kernel",
+            "risk": "low",
+            "source": "https://docs.kernel.org/admin-guide/sysctl/kernel.html",
+            "default": "1",
+            "recommended": "1 (keep on this shared host; 0 only for a trusted single-tenant workload measurably hurt by it)",
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/kernel/split_lock_mitigate"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "kernel.split_lock_mitigate"
+            },
+            "verify": "sysctl kernel.split_lock_mitigate",
+            "rollback": "sudo sysctl -w kernel.split_lock_mitigate=1 (or remove the sysctl.d entry).",
+            "choices": [
+                "0",
+                "1"
+            ],
+            "edit": {
+                "class": "sysctl"
+            }
+        },
+        {
+            "id": "kernel.nmi_watchdog",
+            "title": "kernel.nmi_watchdog",
+            "description": "1 enables the NMI hard-lockup detector (bare-metal default; auto-0 in a KVM guest). Disabling frees one hardware PMU counter for profiling at the cost of losing hard-lockup detection.",
+            "group": "aggressive",
+            "category": "kernel",
+            "risk": "low",
+            "source": "https://docs.kernel.org/admin-guide/sysctl/kernel.html",
+            "default": "1",
+            "recommended": "1 (keep on the bare-metal host; 0 only to free a PMU counter for perf)",
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/kernel/nmi_watchdog"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "kernel.nmi_watchdog"
+            },
+            "verify": "sysctl kernel.nmi_watchdog",
+            "rollback": "sudo sysctl -w kernel.nmi_watchdog=1 (or remove the sysctl.d entry).",
+            "choices": [
+                "0",
+                "1"
+            ],
+            "edit": {
+                "class": "sysctl"
+            }
+        },
+        {
+            "id": "net.ipv4.tcp_congestion_control",
+            "title": "net.ipv4.tcp_congestion_control",
+            "description": "TCP congestion-control algorithm. cubic is the safe default for a 1GbE LAN. BBR is contested: stock kernel 7.0 ships BBRv1, which competes unfairly with CUBIC/Reno in shallow buffers, and only wins on high-RTT/lossy WAN paths \u2014 pair it with the fq qdisc if adopted.",
+            "group": "aggressive",
+            "category": "network",
+            "risk": "medium",
+            "source": "https://docs.kernel.org/admin-guide/sysctl/net.html",
+            "default": "cubic",
+            "recommended": "cubic (keep for 1GbE; BBR is WAN-only and contested)",
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/net/ipv4/tcp_congestion_control"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "net.ipv4.tcp_congestion_control"
+            },
+            "verify": "sysctl net.ipv4.tcp_congestion_control",
+            "rollback": "sudo sysctl -w net.ipv4.tcp_congestion_control=cubic (or remove the sysctl.d entry).",
+            "choices": [
+                "cubic",
+                "bbr",
+                "reno"
+            ],
+            "edit": {
+                "class": "sysctl"
+            }
+        },
+        {
+            "id": "net.core.default_qdisc",
+            "title": "net.core.default_qdisc",
+            "description": "Default queuing discipline for new interfaces. fq_codel is the best bufferbloat/latency choice for mixed 1GbE traffic; switch to fq only when enabling BBR (its pacing wants fq).",
+            "group": "aggressive",
+            "category": "network",
+            "risk": "medium",
+            "source": "https://docs.kernel.org/admin-guide/sysctl/net.html",
+            "default": "fq_codel",
+            "recommended": "fq_codel (keep; fq only if you enable BBR)",
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/net/core/default_qdisc"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "net.core.default_qdisc"
+            },
+            "verify": "sysctl net.core.default_qdisc",
+            "rollback": "sudo sysctl -w net.core.default_qdisc=fq_codel (or remove the sysctl.d entry).",
+            "choices": [
+                "fq_codel",
+                "fq",
+                "pfifo_fast"
+            ],
+            "edit": {
+                "class": "sysctl"
+            }
+        },
+        {
+            "id": "net.ipv4.tcp_fastopen",
+            "title": "net.ipv4.tcp_fastopen",
+            "description": "TCP Fast Open bitmask: 0x1 = client send-in-SYN (default on), 0x2 = server accept-in-SYN. Observed 1 = client only. Set 3 to also enable server-side TFO (has middlebox-compatibility caveats).",
+            "group": "aggressive",
+            "category": "network",
+            "risk": "low",
+            "source": "https://docs.kernel.org/admin-guide/sysctl/net.html",
+            "default": "1",
+            "recommended": "1 (client-only; keep unless you run TFO-aware servers, then 3)",
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/net/ipv4/tcp_fastopen"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "net.ipv4.tcp_fastopen"
+            },
+            "verify": "sysctl net.ipv4.tcp_fastopen",
+            "rollback": "sudo sysctl -w net.ipv4.tcp_fastopen=1 (or remove the sysctl.d entry).",
+            "choices": [
+                "0",
+                "1",
+                "2",
+                "3"
+            ],
+            "edit": {
+                "class": "sysctl"
+            }
+        },
+        {
+            "id": "net.ipv4.tcp_mtu_probing",
+            "title": "net.ipv4.tcp_mtu_probing",
+            "description": "PLPMTUD control: 0 disabled, 1 reactive (enable only when an ICMP black hole is detected), 2 always on. 0 lets a broken-PMTUD path silently stall connections.",
+            "group": "aggressive",
+            "category": "network",
+            "risk": "low",
+            "source": "https://docs.kernel.org/admin-guide/sysctl/net.html",
+            "default": "0",
+            "recommended": "1 (reactive \u2014 safer than 0 against PMTUD black holes)",
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/net/ipv4/tcp_mtu_probing"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "net.ipv4.tcp_mtu_probing"
+            },
+            "verify": "sysctl net.ipv4.tcp_mtu_probing",
+            "rollback": "sudo sysctl -w net.ipv4.tcp_mtu_probing=0 (or remove the sysctl.d entry).",
+            "choices": [
+                "0",
+                "1",
+                "2"
+            ],
+            "edit": {
+                "class": "sysctl"
+            }
+        },
+        {
+            "id": "kernel.pid_max",
+            "title": "kernel.pid_max",
+            "description": "Maximum PID before wraparound. Observed value is the 64-bit maximum; the distro default is appropriate for a many-container host.",
+            "group": "info",
+            "category": "kernel",
+            "risk": "none",
+            "source": "https://docs.kernel.org/admin-guide/sysctl/kernel.html",
+            "default": "4194304",
+            "recommended": "4194304 (keep the distro default)",
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/kernel/pid_max"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "kernel.pid_max"
+            },
+            "verify": "sysctl kernel.pid_max",
+            "rollback": "sudo sysctl -w kernel.pid_max=4194304 (or remove the sysctl.d entry)."
+        },
+        {
+            "id": "kernel.sched_autogroup_enabled",
+            "title": "kernel.sched_autogroup_enabled",
+            "description": "Groups tasks by session for fairer desktop interactivity under load. Default 1; keep on for a desktop, some server workloads disable it.",
+            "group": "info",
+            "category": "kernel",
+            "risk": "none",
+            "source": "https://docs.kernel.org/admin-guide/sysctl/kernel.html",
+            "default": "1",
+            "recommended": "1 (keep for a desktop)",
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/kernel/sched_autogroup_enabled"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "kernel.sched_autogroup_enabled"
+            },
+            "verify": "sysctl kernel.sched_autogroup_enabled",
+            "rollback": "sudo sysctl -w kernel.sched_autogroup_enabled=1 (or remove the sysctl.d entry).",
+            "choices": [
+                "0",
+                "1"
+            ]
+        },
+        {
+            "id": "kernel.printk",
+            "title": "kernel.printk",
+            "description": "Four console log-level thresholds (current, default, minimum, boot-time). Ubuntu default is '4 4 1 7'. Multi-value; edit via sysctl.d rather than here.",
+            "group": "info",
+            "category": "kernel",
+            "risk": "none",
+            "source": "https://docs.kernel.org/admin-guide/sysctl/kernel.html",
+            "default": "4 4 1 7",
+            "recommended": "4 4 1 7 (keep the distro default)",
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/kernel/printk"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "kernel.printk"
+            },
+            "verify": "sysctl kernel.printk",
+            "rollback": "sudo sysctl -w kernel.printk=4 4 1 7 (or remove the sysctl.d entry)."
+        },
+        {
+            "id": "fs.aio-max-nr",
+            "title": "fs.aio-max-nr",
+            "description": "System-wide maximum outstanding async I/O requests. Default 65536; databases and some VM disk backends may need it raised, otherwise keep.",
+            "group": "info",
+            "category": "limits",
+            "risk": "none",
+            "source": "https://docs.kernel.org/admin-guide/sysctl/fs.html",
+            "default": "65536",
+            "recommended": "65536 (keep unless a DB/VM workload needs more)",
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/fs/aio-max-nr"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "fs.aio-max-nr"
+            },
+            "verify": "sysctl fs.aio-max-nr",
+            "rollback": "sudo sysctl -w fs.aio-max-nr=65536 (or remove the sysctl.d entry)."
+        },
+        {
+            "id": "net.core.rmem_max",
+            "title": "net.core.rmem_max",
+            "description": "Max receive socket buffer an application may request. Raising it helps only high-BDP WAN transfers and can hurt a 1GbE LAN host \u2014 a workload-dependent WAN tuning, not a general win.",
+            "group": "info",
+            "category": "network",
+            "risk": "none",
+            "source": "https://docs.kernel.org/admin-guide/sysctl/net.html",
+            "default": "212992",
+            "recommended": "212992 kernel default (this host shows a raised 4194304); keep default unless doing high-BDP WAN transfer",
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/net/core/rmem_max"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "net.core.rmem_max"
+            },
+            "verify": "sysctl net.core.rmem_max",
+            "rollback": "sudo sysctl -w net.core.rmem_max=212992 (or remove the sysctl.d entry)."
+        },
+        {
+            "id": "net.core.wmem_max",
+            "title": "net.core.wmem_max",
+            "description": "Max send socket buffer an application may request. Same WAN-only caveat as rmem_max.",
+            "group": "info",
+            "category": "network",
+            "risk": "none",
+            "source": "https://docs.kernel.org/admin-guide/sysctl/net.html",
+            "default": "212992",
+            "recommended": "212992 kernel default (this host shows 4194304); keep default unless high-BDP WAN",
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/net/core/wmem_max"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "net.core.wmem_max"
+            },
+            "verify": "sysctl net.core.wmem_max",
+            "rollback": "sudo sysctl -w net.core.wmem_max=212992 (or remove the sysctl.d entry)."
+        },
+        {
+            "id": "net.core.netdev_max_backlog",
+            "title": "net.core.netdev_max_backlog",
+            "description": "Packets queued to the input side when the interface receives faster than the kernel processes. Raising it targets 10GbE+; default is fine for 1GbE.",
+            "group": "info",
+            "category": "network",
+            "risk": "none",
+            "source": "https://docs.kernel.org/admin-guide/sysctl/net.html",
+            "default": "1000",
+            "recommended": "1000 (keep for 1GbE)",
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/net/core/netdev_max_backlog"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "net.core.netdev_max_backlog"
+            },
+            "verify": "sysctl net.core.netdev_max_backlog",
+            "rollback": "sudo sysctl -w net.core.netdev_max_backlog=1000 (or remove the sysctl.d entry)."
+        },
+        {
             "id": "disk.nvme0n1.scheduler",
             "title": "nvme0n1 I/O scheduler",
             "description": "Block I/O scheduler for nvme0n1 (ssd). 'none' suits fast NVMe (the device reorders internally); mq-deadline adds fairness for SATA; bfq favors desktop interactivity on slower disks.",
