@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.1.0 - 2026-11-16
+
+Conntrack tunables, after edt1 lost all networking 2026-11-14 08:25 to 11-15
+20:22 when nf_conntrack hit its 262144 max and dropped every new flow (a leak
+of idle ESTABLISHED connections to :8444 held slots for the 5-day timeout).
+
+- New settings (76 -> 80): `net.netfilter.nf_conntrack_max` (editable, range
+  65536-4194304, recommended 1048576 on edt1), `net.netfilter.nf_conntrack_tcp_timeout_established`
+  (editable, range 3600-432000, recommended 86400), and read-only info rows
+  `nf_conntrack_count` and `nf_conntrack_buckets`.
+- Descriptions note that net.netfilter.* exists only with the nf_conntrack
+  module loaded (persist with /etc/modules-load.d/nf_conntrack.conf) and that
+  the tuner's 95-cockpit-tuner.conf sorts after other sysctl.d files.
+- `stability-safe` profile gains max=1048576 and established=86400.
+- No reader change needed: a missing /proc file already resolves to an empty
+  value in both app.js and bin/tuner-snapshot.py.
+
 ## 1.0.1 - 2026-09-07
 
 Install classification is now decided by LAYOUT, not by a development-root path

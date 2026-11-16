@@ -1430,6 +1430,102 @@
             "rollback": "sudo sysctl -w net.core.netdev_max_backlog=1000 (or remove the sysctl.d entry)."
         },
         {
+            "id": "net.netfilter.nf_conntrack_max",
+            "title": "net.netfilter.nf_conntrack_max (connection-tracking table size)",
+            "description": "Maximum entries in the netfilter connection-tracking table. Kernel default is derived from RAM (262144 on edt1). When the table is full the kernel logs 'nf_conntrack: table full, dropping packet' and NEW connections silently fail (existing flows keep working) - this took edt1's networking down 2026-11-14 to 11-15. Each entry costs roughly 300 bytes, so 1048576 is about 300 MB worst case. Watch net.netfilter.nf_conntrack_count against this value. net.netfilter.* exists only once the nf_conntrack module is loaded, so persistence needs /etc/modules-load.d/nf_conntrack.conf (otherwise sysctl.d is applied before the keys exist and silently fails). Ordering: the tuner's 95-cockpit-tuner.conf sorts after other sysctl.d files (e.g. 90-conntrack.conf) and wins.",
+            "group": "safe",
+            "category": "network",
+            "risk": "low",
+            "source": "https://docs.kernel.org/networking/nf_conntrack-sysctl.html",
+            "default": "262144 (RAM-derived; varies by host)",
+            "recommended": "1048576 (edt1; ~300 MB worst case)",
+            "range": {
+                "min": 65536,
+                "max": 4194304
+            },
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/net/netfilter/nf_conntrack_max"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "net.netfilter.nf_conntrack_max"
+            },
+            "edit": {
+                "class": "sysctl"
+            },
+            "verify": "sysctl net.netfilter.nf_conntrack_max",
+            "rollback": "sudo sysctl -w net.netfilter.nf_conntrack_max=262144 (or remove the sysctl.d entry)."
+        },
+        {
+            "id": "net.netfilter.nf_conntrack_tcp_timeout_established",
+            "title": "net.netfilter.nf_conntrack_tcp_timeout_established (seconds)",
+            "description": "How long an idle ESTABLISHED TCP flow keeps its conntrack slot. Kernel default 432000 (5 days) lets a leaked idle connection (for example a pod-agent leak of idle connections to :8444) hold slots until the table fills. 86400 (1 day) bounds that. Trade-off: long-idle legitimate TCP flows without keepalives that pass through NAT/stateful firewall rules may be dropped after this time. net.netfilter.* exists only once the nf_conntrack module is loaded, so persistence needs /etc/modules-load.d/nf_conntrack.conf (otherwise sysctl.d is applied before the keys exist and silently fails). Ordering: the tuner's 95-cockpit-tuner.conf sorts after other sysctl.d files (e.g. 90-conntrack.conf) and wins.",
+            "group": "safe",
+            "category": "network",
+            "risk": "low",
+            "source": "https://docs.kernel.org/networking/nf_conntrack-sysctl.html",
+            "default": "432000 (5 days)",
+            "recommended": "86400 (1 day)",
+            "range": {
+                "min": 3600,
+                "max": 432000
+            },
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/net/netfilter/nf_conntrack_tcp_timeout_established"
+            },
+            "persistent": {
+                "type": "sysctl",
+                "key": "net.netfilter.nf_conntrack_tcp_timeout_established"
+            },
+            "edit": {
+                "class": "sysctl"
+            },
+            "verify": "sysctl net.netfilter.nf_conntrack_tcp_timeout_established",
+            "rollback": "sudo sysctl -w net.netfilter.nf_conntrack_tcp_timeout_established=432000 (or remove the sysctl.d entry)."
+        },
+        {
+            "id": "net.netfilter.nf_conntrack_count",
+            "title": "net.netfilter.nf_conntrack_count (current entries, read-only)",
+            "description": "Current number of tracked connections. Compare with net.netfilter.nf_conntrack_max: fill % = count / max; above ~80% is a warning. Steady growth that never falls back indicates a connection leak (find the owner with 'conntrack -L' or 'ss -tn'). Read-only; absent (shows empty) when the nf_conntrack module is not loaded.",
+            "group": "info",
+            "category": "network",
+            "risk": "none",
+            "source": "https://docs.kernel.org/networking/nf_conntrack-sysctl.html",
+            "default": "n/a (varies; read-only counter)",
+            "recommended": "well below nf_conntrack_max (under ~50% fill, not growing)",
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/net/netfilter/nf_conntrack_count"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "verify": "sysctl net.netfilter.nf_conntrack_count",
+            "rollback": "Read-only; nothing to roll back."
+        },
+        {
+            "id": "net.netfilter.nf_conntrack_buckets",
+            "title": "net.netfilter.nf_conntrack_buckets (hash buckets, read-only)",
+            "description": "Size of the conntrack hash table (normally max/4 to max/8). Read-only via sysctl; persistent sizing is set with 'options nf_conntrack hashsize=<n>' in /etc/modprobe.d/ (or the module parameter), and applies when the module loads. When raising nf_conntrack_max a large amount, scale buckets to roughly max/4.",
+            "group": "info",
+            "category": "network",
+            "risk": "none",
+            "source": "https://docs.kernel.org/networking/nf_conntrack-sysctl.html",
+            "default": "RAM-derived (varies by host)",
+            "recommended": "about nf_conntrack_max / 4",
+            "live": {
+                "type": "procfile",
+                "path": "/proc/sys/net/netfilter/nf_conntrack_buckets"
+            },
+            "persistent": {
+                "type": "none"
+            },
+            "verify": "sysctl net.netfilter.nf_conntrack_buckets",
+            "rollback": "Read-only; nothing to roll back."
+        },
+        {
             "id": "disk.nvme0n1.scheduler",
             "title": "nvme0n1 I/O scheduler",
             "description": "Block I/O scheduler for nvme0n1 (ssd). 'none' suits fast NVMe (the device reorders internally); mq-deadline adds fairness for SATA; bfq favors desktop interactivity on slower disks.",
