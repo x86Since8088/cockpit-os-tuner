@@ -41,7 +41,9 @@
                 "vm.vfs_cache_pressure": "100",
                 "vm.zone_reclaim_mode": "0",
                 "fs.protected_regular": "2",
-                "fs.protected_fifos": "1"
+                "fs.protected_fifos": "1",
+                "net.netfilter.nf_conntrack_max": "1048576",
+                "net.netfilter.nf_conntrack_tcp_timeout_established": "86400"
             }
         },
         {
